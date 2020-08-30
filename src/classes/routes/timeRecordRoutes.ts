@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import timeRecordController from '../controllers/timeRecordController'; // cont
 import { App } from '../../app';
 // @ts-ignore
-import routes = require('../../../../common/typescript/routes');
+import routes from '../../../../common/typescript/routes';
 import { ITimeRecordsDocumentData } from '../../../../common/typescript/mongoDB/iTimeRecordsDocument';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
 
