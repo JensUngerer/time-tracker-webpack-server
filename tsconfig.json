@@ -12,5 +12,13 @@
     "typeRoots": ["node_modules/@types"]
   },
   "exclude": ["node_modules"],
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "paths": {
+    "aws4": [
+      "./node_modules/aws4/aws4.js"
+    ],
+    "mongodb-client-encryption": [
+      "./node_modules/mongodb-client-encryption/index.js"
+    ]
+  }
 }
