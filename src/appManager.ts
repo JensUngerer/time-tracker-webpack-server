@@ -53,13 +53,29 @@ export class AppManager {
         AppManager.app = app;
         if (isStandalone) {
             // https://nodejs.org/api/process.html#process_signal_events
-            process.on('SIGINT', () => {
-                AppManager.gracefulShutdown('SIGINT: CTRL+ C -> graceful shutdown completed -> process.exit()', isStandalone);
-            });
+            const SIGINT = 'SIGINT';
+            const sigIntCallback = () => {
+                process.off(SIGINT, sigIntCallback);
 
-            process.on('SIGHUP', () => {
+                // DEBUGGING:
+                console.error(SIGINT + ' event removed');
+
+                AppManager.gracefulShutdown('SIGINT: CTRL+ C -> graceful shutdown completed -> process.exit()', isStandalone);
+            };
+            
+            process.on(SIGINT, sigIntCallback);
+
+            const SIGHUP = 'SIGHUP';
+            const sigHupCallback = () => {
+                process.off(SIGHUP, sigHupCallback);
+
+                // DEBUGGING:
+                console.error(SIGHUP + ' event removed');
+
                 AppManager.gracefulShutdown('SIGHUP: window is closed -> graceful shutdown completed -> process.exit()', isStandalone);
-            });
+            };
+
+            process.on(SIGHUP, sigHupCallback);
         }
     }
 }
