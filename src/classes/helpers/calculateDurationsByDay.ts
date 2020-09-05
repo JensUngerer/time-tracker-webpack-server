@@ -12,7 +12,7 @@ export class CalculateDurationsByDay {
     constructor() { }
 
     async calculate(req: Request, res: Response, getBasis: (timeEntryDoc: ITimeEntryDocument) => Promise<IBookingDeclaration | ITask>, getId: (basis: IBookingDeclaration | ITask) => string, isDisabledProperty: string) {
-        const addCurrentEntry = (groupedTimeEntriesMap: { [dayTimeStamp: number]: { [taskOrBookingId: string]: IDurationSumBase } }, dayTimeStamp: number, id:string, oneTimeEntryDoc: ITimeEntryDocument) => {
+        const addCurrentEntry = (groupedTimeEntriesMap: { [dayTimeStamp: number]: { [taskOrBookingId: string]: IDurationSumBase } }, dayTimeStamp: number, id:string, oneTimeEntryDoc: ITimeEntryDocument): number => {
             const previousDurationSumInMilliseconds = groupedTimeEntriesMap[dayTimeStamp][id].durations[0].durationSumInMilliseconds;
             const currentDurationSumInMilliseconds = oneTimeEntryDoc.endTime.getTime() - oneTimeEntryDoc.startTime.getTime();
             const newDurationSumInMilliseconds = previousDurationSumInMilliseconds + currentDurationSumInMilliseconds;
@@ -24,6 +24,7 @@ export class CalculateDurationsByDay {
             groupedTimeEntriesMap[dayTimeStamp][id].durations[0]._timeEntryIds.push(oneTimeEntryDoc.timeEntryId);
             // DEBUGGING:
             // console.log('adding value: ' + currentDurationSumInMilliseconds);
+            return currentDurationSumInMilliseconds;
         };
 
         try {
@@ -46,15 +47,18 @@ export class CalculateDurationsByDay {
                             const parsedTimeStamp = parseFloat(timeStamp);
                             const buffer: IDurationSumBase = {
                                 day: new Date(parsedTimeStamp),
-                                durations: []
+                                durations: [],
+                                overallDurationSum: 0
                             };
 
                             for (const theId in allIdsOfADay) {
                                 if (Object.prototype.hasOwnProperty.call(allIdsOfADay, theId)) {
                                     const oneSum = allIdsOfADay[theId].durations[0];
+                                    buffer.overallDurationSum += oneSum.durationSumInMilliseconds;
                                     buffer.durations.push(oneSum);
                                 }
                             }
+                            buffer.overallDurationSum = Math.round(((((buffer.overallDurationSum / 1000) / 60) / 60) * 100)) / 100;
                             convertedDataStructure.push(buffer);
                         }
                     }
@@ -84,7 +88,8 @@ export class CalculateDurationsByDay {
                                     durationSumInMilliseconds: 0,
                                     _timeEntryIds: []
                                 }
-                            ]
+                            ],
+                            overallDurationSum: 0
                         };
                     } 
 
