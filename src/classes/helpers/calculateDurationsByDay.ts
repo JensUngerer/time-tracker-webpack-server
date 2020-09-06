@@ -19,6 +19,9 @@ export class CalculateDurationsByDay {
             let newDurationSumInHours = Math.floor((newDurationSumInMilliseconds / (1000 * 60))) / 60;
             newDurationSumInHours = Math.round(newDurationSumInHours * 100) / 100;
 
+            // DEBUGGING:
+            // console.log('newDurationSumInHours' + ':' + newDurationSumInHours);
+
             groupedTimeEntriesMap[dayTimeStamp][id].durations[0].durationInHours = newDurationSumInHours;
             groupedTimeEntriesMap[dayTimeStamp][id].durations[0].durationSumInMilliseconds = newDurationSumInMilliseconds;
             groupedTimeEntriesMap[dayTimeStamp][id].durations[0]._timeEntryIds.push(oneTimeEntryDoc.timeEntryId);
@@ -54,11 +57,15 @@ export class CalculateDurationsByDay {
                             for (const theId in allIdsOfADay) {
                                 if (Object.prototype.hasOwnProperty.call(allIdsOfADay, theId)) {
                                     const oneSum = allIdsOfADay[theId].durations[0];
-                                    buffer.overallDurationSum += oneSum.durationSumInMilliseconds;
+
+                                    // DEBUGGING:
+                                    // console.log('oneSum.durationInHours' + ':' + oneSum.durationInHours);
+
+                                    buffer.overallDurationSum += oneSum.durationInHours;
                                     buffer.durations.push(oneSum);
                                 }
                             }
-                            buffer.overallDurationSum = Math.round(((((buffer.overallDurationSum / 1000) / 60) / 60) * 100)) / 100;
+                            buffer.overallDurationSum = Math.round(buffer.overallDurationSum * 100) / 100;
                             convertedDataStructure.push(buffer);
                         }
                     }
