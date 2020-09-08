@@ -16,11 +16,10 @@ export class CalculateDurationsByDay {
             const previousDurationSumInMilliseconds = groupedTimeEntriesMap[dayTimeStamp][id].durations[0].durationSumInMilliseconds;
             const currentDurationSumInMilliseconds = oneTimeEntryDoc.endTime.getTime() - oneTimeEntryDoc.startTime.getTime();
             const newDurationSumInMilliseconds = previousDurationSumInMilliseconds + currentDurationSumInMilliseconds;
-            let newDurationSumInHours = Math.floor((newDurationSumInMilliseconds / (1000 * 60))) / 60;
-            newDurationSumInHours = Math.round(newDurationSumInHours * 100) / 100;
+            let newDurationSumInHours = (newDurationSumInMilliseconds / (1000 * 60)) / 60;
 
             // DEBUGGING:
-            // console.log('newDurationSumInHours' + ':' + newDurationSumInHours);
+            console.log('newDurationSumInHours' + ':' + newDurationSumInHours);
 
             groupedTimeEntriesMap[dayTimeStamp][id].durations[0].durationInHours = newDurationSumInHours;
             groupedTimeEntriesMap[dayTimeStamp][id].durations[0].durationSumInMilliseconds = newDurationSumInMilliseconds;
@@ -65,7 +64,6 @@ export class CalculateDurationsByDay {
                                     buffer.durations.push(oneSum);
                                 }
                             }
-                            buffer.overallDurationSum = Math.round(buffer.overallDurationSum * 100) / 100;
                             convertedDataStructure.push(buffer);
                         }
                     }
