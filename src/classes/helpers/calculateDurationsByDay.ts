@@ -19,7 +19,7 @@ export class CalculateDurationsByDay {
             let newDurationSumInHours = (newDurationSumInMilliseconds / (1000 * 60)) / 60;
 
             // DEBUGGING:
-            console.log('newDurationSumInHours' + ':' + newDurationSumInHours);
+            // console.log('newDurationSumInHours' + ':' + newDurationSumInHours);
 
             groupedTimeEntriesMap[dayTimeStamp][id].durations[0].durationInHours = newDurationSumInHours;
             groupedTimeEntriesMap[dayTimeStamp][id].durations[0].durationSumInMilliseconds = newDurationSumInMilliseconds;
