@@ -15,6 +15,7 @@ import { RequestProcessingHelpers } from './../helpers/requestProcessingHelpers'
 import { UrlHelpers } from './../helpers/urlHelpers';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
 import { CalculateDurationsByIntervall } from '../helpers/calculateDurationsByInterval';
+// import { ITasksDocument } from '../../../../common/typescript/mongoDB/iTasksDocument';
 
 const router = express.Router();
 
@@ -363,6 +364,7 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     const endTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.endDateProperty);
     if (!startTimeUtc || !endTimeUtc) {
         console.error('no time stamps found in url'); 
+        res.send('no time stamps in ulr');
         return;
     }
 
@@ -374,10 +376,56 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
 
         // const serialized = Serialization.serialize(timeEntries);
         // res.send(serialized);
-        const result = await CalculateDurationsByIntervall.calculate(startTimeUtc, endTimeUtc);
-        const serialized = Serialization.serialize(result);
+        // const returnValueByCategoryMap: { [category: string]: any[]} = {};
+
+        const summeriesByCategoryMap = await CalculateDurationsByIntervall.calculate(startTimeUtc, endTimeUtc);
+        if (!summeriesByCategoryMap) {
+            console.error('summeriesByCategoryMap is null');
+            res.send('');
+            return;
+        }
+
+        // DEBUGGING:
+        // console.log(JSON.stringify(summeriesByCategoryMap, null, 4));
+
+        // const tasksByCategoryMap: {[category: string]: ITasksDocument[]} = {};
+        // for (const category in summeriesByCategoryMap) {
+        //     if (Object.prototype.hasOwnProperty.call(summeriesByCategoryMap, category)) {
+        //         // if (!tasksByCategoryMap[category]) {
+        //         //     tasksByCategoryMap[category] = [];
+        //         // }
+        //         // if (!returnValueByCategoryMap[category]) {
+        //         //     returnValueByCategoryMap[category] = [];
+        //         // }
+        //         // const oneSummaryByCategory = summeriesByCategoryMap[category];
+        //         // for (const oneTaskId of oneSummaryByCategory.taskIds) {
+        //         //     // const correspondingTask = await taskController.get()
+        //         //     const queryObj: FilterQuery<any> = {};
+        //         //     queryObj[routesConfig.taskIdProperty] = oneTaskId;
+        //         //     const correspondingTasks: ITasksDocument[] = await App.mongoDbOperations.getFiltered(routesConfig.tasksCollectionName, queryObj);
+        //         //     if (!correspondingTasks || !correspondingTasks.length || correspondingTasks.length > 1) {
+        //         //         console.error('more than one taks found! for:' + oneTaskId);
+        //         //         continue;
+        //         //     }
+        //         //     // there should be only one single document!
+        //         //     const FIRST_AND_ONLY_DOCUMENT_INDEX = 0;
+        //         //     tasksByCategoryMap[category].push(correspondingTasks[FIRST_AND_ONLY_DOCUMENT_INDEX]);
+        //         // }
+            
+        //         returnValueByCategoryMap[category].push({
+        //             summeries: summeriesByCategoryMap[category],
+        //             // tasks: tasksByCategoryMap[category]
+        //         });
+        //     }
+        // }
+
+        // DEBUGGING:
+        // console.log(JSON.stringify(returnValueByCategoryMap, null, 4))
+        
+        const serialized = Serialization.serialize(summeriesByCategoryMap);
         res.send(serialized);
     } catch (e) {
+        console.error(JSON.stringify(e, null, 4));
         res.send(JSON.stringify(e, null, 4));
     }
 };

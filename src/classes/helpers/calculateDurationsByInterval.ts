@@ -6,6 +6,8 @@ export interface ISummarizedTimeEntries {
     taskCategory: string;
     overallDurationSum: number;
     overallDurationSumFraction: number;
+    durationSumByTaskId: { [taskId: string]: number };
+    durationSumFractionByTaskId: { [taskId: string]: number };
     _timeEntryIds: string[];
 }
 
@@ -61,37 +63,72 @@ export class CalculateDurationsByIntervall {
                 console.error('no time entries to calculate duration from');
                 return null;
             }
+            const durationSumByTaskId: { [taskId: string]: number } = {};
+            const durationSumFractionByTaskId: { [taskId: string]: number } = {};
             const timeEntriesByCategory = await this.getTimeEntriesByTaskCategory(timeEntryDocsByIntervall);
+
+            // DEBUGGING:
+            // console.log(JSON.stringify(timeEntriesByCategory, null, 4))
+
             const categoryBufferMap: { [category: string]: ISummarizedTimeEntries } = {};
             let durationSumOverAllCategorys = 0.0;
             for (const taskCategory in timeEntriesByCategory) {
                 if (Object.prototype.hasOwnProperty.call(timeEntriesByCategory, taskCategory)) {
                     const timeEntriesOfOneCategory: ITimeEntryDocument[] = timeEntriesByCategory[taskCategory];
                     const oneTimeEntryIds: string[] = [];
+                    // const oneTaskIds: string[] = [];
                     let oneOverallSum = 0.0;
                     timeEntriesOfOneCategory.forEach(oneTimeEntry => {
-                        oneOverallSum += this.getDurationOfTimeEntry(oneTimeEntry);
+                        const oneDuration = this.getDurationOfTimeEntry(oneTimeEntry);
+
+                        if (typeof durationSumByTaskId[oneTimeEntry._taskId] === 'undefined') {
+                            durationSumByTaskId[oneTimeEntry._taskId] = 0;
+                        }
+                        durationSumByTaskId[oneTimeEntry._taskId] += oneDuration;
+
+                        oneOverallSum += oneDuration;
                         oneTimeEntryIds.push(oneTimeEntry.timeEntryId);
+                        // oneTaskIds.push(oneTimeEntry._taskId);
                     });
                     categoryBufferMap[taskCategory] = {
                         taskCategory: taskCategory,
                         overallDurationSum: oneOverallSum,
                         overallDurationSumFraction: -1.0,
-                        _timeEntryIds: oneTimeEntryIds
+                        _timeEntryIds: oneTimeEntryIds,
+                        durationSumByTaskId,
+                        durationSumFractionByTaskId
+                        // taskIds: oneTaskIds
                     };
                     durationSumOverAllCategorys += oneOverallSum;
+                }
+            }
+
+            // DEBUGGING:
+            // console.log(JSON.stringify(categoryBufferMap, null, 4))
+
+            for (const taskId in durationSumByTaskId) {
+                if (Object.prototype.hasOwnProperty.call(durationSumByTaskId, taskId)) {
+                    const absoluteDurationSumByTaskId = durationSumByTaskId[taskId];
+                    durationSumFractionByTaskId[taskId] = absoluteDurationSumByTaskId / durationSumOverAllCategorys;
+
+                    // convert to hours:
+                    durationSumByTaskId[taskId] = (((absoluteDurationSumByTaskId / 1000) / 60) / 60);
                 }
             }
             for (const oneTaskCat in categoryBufferMap) {
                 if (Object.prototype.hasOwnProperty.call(categoryBufferMap, oneTaskCat)) {
                     const summerizedEntry = categoryBufferMap[oneTaskCat];
                     summerizedEntry.overallDurationSumFraction = summerizedEntry.overallDurationSum / durationSumOverAllCategorys;
+
+                    // convert to hours:
+                    categoryBufferMap[oneTaskCat].overallDurationSum = (((categoryBufferMap[oneTaskCat].overallDurationSum / 1000) / 60) / 60);
                 }
             }
 
             // TODO: FIXME: use generic approach instead  of hard coded one
-            const firstCategoryTimeEntrySummary = categoryBufferMap['feature'];
-            return firstCategoryTimeEntrySummary;
+            // const firstCategoryTimeEntrySummary = categoryBufferMap['feature'];
+            // return firstCategoryTimeEntrySummary;
+            return categoryBufferMap;
         }
         catch (e) {
             return e;
