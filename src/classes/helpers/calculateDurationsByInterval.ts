@@ -1,15 +1,7 @@
 import { ITimeEntryDocument } from "../../../../common/typescript/mongoDB/iTimeEntryDocument";
 import App from "../../app";
 import timeEntriesController from "../controllers/timeEntriesController";
-
-export interface ISummarizedTimeEntries {
-    taskCategory: string;
-    overallDurationSum: number;
-    overallDurationSumFraction: number;
-    durationSumByTaskId: { [taskId: string]: number };
-    durationSumFractionByTaskId: { [taskId: string]: number };
-    _timeEntryIds: string[];
-}
+import { ISummarizedTimeEntries } from "./../../../../common/typescript/iSummarizedTimeEntries";
 
 export class CalculateDurationsByIntervall {
     static async getTimeEntriesByTaskCategory(timeEntryDocsByIntervall: ITimeEntryDocument[]) {
@@ -55,16 +47,16 @@ export class CalculateDurationsByIntervall {
     static async calculate(startTime: Date, endTime: Date, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean) {
         try {
             // DEBUGGING:
-            // console.log(startTime);
-            // console.log(endTime);
+            // console.log(startTime.toUTCString());
+            // console.log(endTime.toUTCString());
 
             const timeEntryDocsByIntervall: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTime, endTime, isDisabledPropertyName, isDisabledPropertyValue);
             if (!timeEntryDocsByIntervall || !timeEntryDocsByIntervall.length) {
                 console.error('no time entries to calculate duration from');
                 return null;
             }
-            const durationSumByTaskId: { [taskId: string]: number } = {};
-            const durationSumFractionByTaskId: { [taskId: string]: number } = {};
+            const durationSumByTaskIdMap: { [category: string]: { [taskId: string]: number } } = {};
+            const durationSumFractionByTaskIdMap: { [category: string]: {[taskId: string]: number } } = {};
             const timeEntriesByCategory = await this.getTimeEntriesByTaskCategory(timeEntryDocsByIntervall);
 
             // DEBUGGING:
@@ -73,6 +65,12 @@ export class CalculateDurationsByIntervall {
             const categoryBufferMap: { [category: string]: ISummarizedTimeEntries } = {};
             let durationSumOverAllCategorys = 0.0;
             for (const taskCategory in timeEntriesByCategory) {
+                if (!durationSumByTaskIdMap[taskCategory]) {
+                    durationSumByTaskIdMap[taskCategory] = {};
+                }
+                if (!durationSumFractionByTaskIdMap[taskCategory]) {
+                    durationSumFractionByTaskIdMap[taskCategory] =  {};
+                }
                 if (Object.prototype.hasOwnProperty.call(timeEntriesByCategory, taskCategory)) {
                     const timeEntriesOfOneCategory: ITimeEntryDocument[] = timeEntriesByCategory[taskCategory];
                     const oneTimeEntryIds: string[] = [];
@@ -81,10 +79,10 @@ export class CalculateDurationsByIntervall {
                     timeEntriesOfOneCategory.forEach(oneTimeEntry => {
                         const oneDuration = this.getDurationOfTimeEntry(oneTimeEntry);
 
-                        if (typeof durationSumByTaskId[oneTimeEntry._taskId] === 'undefined') {
-                            durationSumByTaskId[oneTimeEntry._taskId] = 0;
+                        if (typeof durationSumByTaskIdMap[taskCategory][oneTimeEntry._taskId] === 'undefined') {
+                            durationSumByTaskIdMap[taskCategory][oneTimeEntry._taskId] = 0;
                         }
-                        durationSumByTaskId[oneTimeEntry._taskId] += oneDuration;
+                        durationSumByTaskIdMap[taskCategory][oneTimeEntry._taskId] += oneDuration;
 
                         oneOverallSum += oneDuration;
                         oneTimeEntryIds.push(oneTimeEntry.timeEntryId);
@@ -95,8 +93,8 @@ export class CalculateDurationsByIntervall {
                         overallDurationSum: oneOverallSum,
                         overallDurationSumFraction: -1.0,
                         _timeEntryIds: oneTimeEntryIds,
-                        durationSumByTaskId,
-                        durationSumFractionByTaskId
+                        durationSumByTaskId: durationSumByTaskIdMap[taskCategory],
+                        durationSumFractionByTaskId: durationSumFractionByTaskIdMap[taskCategory]
                         // taskIds: oneTaskIds
                     };
                     durationSumOverAllCategorys += oneOverallSum;
@@ -104,17 +102,27 @@ export class CalculateDurationsByIntervall {
             }
 
             // DEBUGGING:
-            // console.log(JSON.stringify(categoryBufferMap, null, 4))
+            // console.log(JSON.stringify(categoryBufferMap, null, 4));
 
-            for (const taskId in durationSumByTaskId) {
-                if (Object.prototype.hasOwnProperty.call(durationSumByTaskId, taskId)) {
-                    const absoluteDurationSumByTaskId = durationSumByTaskId[taskId];
-                    durationSumFractionByTaskId[taskId] = absoluteDurationSumByTaskId / durationSumOverAllCategorys;
-
-                    // convert to hours:
-                    durationSumByTaskId[taskId] = (((absoluteDurationSumByTaskId / 1000) / 60) / 60);
+            for (const taskCategory in durationSumByTaskIdMap) {
+                if (Object.prototype.hasOwnProperty.call(durationSumByTaskIdMap, taskCategory)) {
+                    // const element = durationSumByTaskIdMap[taskCategory];
+                    for (const taskId in durationSumByTaskIdMap[taskCategory]) {
+                        if (Object.prototype.hasOwnProperty.call(durationSumByTaskIdMap[taskCategory], taskId)) {
+                            const absolutedurationSumByTaskId = durationSumByTaskIdMap[taskCategory][taskId];
+                            durationSumFractionByTaskIdMap[taskCategory][taskId] = absolutedurationSumByTaskId / durationSumOverAllCategorys;
+        
+                            // convert to hours:
+                            durationSumByTaskIdMap[taskCategory][taskId] = (((absolutedurationSumByTaskId / 1000) / 60) / 60);
+                        }
+                    }
                 }
             }
+
+
+            // DEBUGGING:
+            // console.log(JSON.stringify(categoryBufferMap, null, 4));
+           
             for (const oneTaskCat in categoryBufferMap) {
                 if (Object.prototype.hasOwnProperty.call(categoryBufferMap, oneTaskCat)) {
                     const summerizedEntry = categoryBufferMap[oneTaskCat];
@@ -125,10 +133,7 @@ export class CalculateDurationsByIntervall {
                 }
             }
 
-            // TODO: FIXME: use generic approach instead  of hard coded one
-            // const firstCategoryTimeEntrySummary = categoryBufferMap['feature'];
-            // return firstCategoryTimeEntrySummary;
-            return categoryBufferMap;
+            return Object.values(categoryBufferMap);
         }
         catch (e) {
             return e;

@@ -378,9 +378,9 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
         // res.send(serialized);
         // const returnValueByCategoryMap: { [category: string]: any[]} = {};
 
-        const summeriesByCategoryMap = await CalculateDurationsByIntervall.calculate(startTimeUtc, endTimeUtc);
-        if (!summeriesByCategoryMap) {
-            console.error('summeriesByCategoryMap is null');
+        const summeries = await CalculateDurationsByIntervall.calculate(startTimeUtc, endTimeUtc);
+        if (!summeries || !summeries.length) {
+            console.error('no summaries');
             res.send('');
             return;
         }
@@ -422,7 +422,7 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
         // DEBUGGING:
         // console.log(JSON.stringify(returnValueByCategoryMap, null, 4))
         
-        const serialized = Serialization.serialize(summeriesByCategoryMap);
+        const serialized = Serialization.serialize(summeries);
         res.send(serialized);
     } catch (e) {
         console.error(JSON.stringify(e, null, 4));
