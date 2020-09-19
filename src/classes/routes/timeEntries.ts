@@ -14,6 +14,7 @@ import timeEntriesController from './../controllers/timeEntriesController';
 import { RequestProcessingHelpers } from './../helpers/requestProcessingHelpers';
 import { UrlHelpers } from './../helpers/urlHelpers';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
+import { CalculateDurationsByIntervall } from '../helpers/calculateDurationsByInterval';
 
 const router = express.Router();
 
@@ -340,21 +341,45 @@ const getRunningTimeEntryHandler = async (req: Request, res: Response) => {
     res.send(stringifiedResponse);
 };
 
-const getViaIdHandler = async (req: Request, res: Response) => {
-    const timeEntriesId = UrlHelpers.getIdFromUlr(req.url);
-    const filterQuery: FilterQuery<any> = {};
-    filterQuery[routesConfig.timeEntryIdProperty] = timeEntriesId;
-    const timeEntriesPromise = timeEntriesController.get(req, App.mongoDbOperations, filterQuery);
-    const timeEntries: ITimeEntryDocument[] = await timeEntriesPromise;
+// const getViaIdHandler = async (req: Request, res: Response) => {
+//     const timeEntriesId = UrlHelpers.getIdFromUlr(req.url);
+//     const filterQuery: FilterQuery<any> = {};
+//     filterQuery[routesConfig.timeEntryIdProperty] = timeEntriesId;
+//     const timeEntriesPromise = timeEntriesController.get(req, App.mongoDbOperations, filterQuery);
+//     const timeEntries: ITimeEntryDocument[] = await timeEntriesPromise;
 
-    if (!timeEntries || timeEntries.length !== 1)  {
-        console.error('no or more than one time entry found');
-        res.send(null);
+//     if (!timeEntries || timeEntries.length !== 1)  {
+//         console.error('no or more than one time entry found');
+//         res.send(null);
+//         return;
+//     }
+
+//     const stringifiedResponse = Serialization.serialize(timeEntries[0]);
+//     res.send(stringifiedResponse);
+// };
+
+const getStatisticsHandler = async (req: Request, res: Response) => {
+    const startTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.startTimeProperty);
+    const endTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.endDateProperty);
+    if (!startTimeUtc || !endTimeUtc) {
+        console.error('no time stamps found in url'); 
         return;
     }
 
-    const stringifiedResponse = Serialization.serialize(timeEntries[0]);
-    res.send(stringifiedResponse);
+    //  DEBUGGING
+    // console.log(startTimeUtc.toUTCString());
+    // console.log(endTimeUtc.toUTCString());
+    try {
+        // const timeEntries = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTimeUtc, endTimeUtc);
+
+        // const serialized = Serialization.serialize(timeEntries);
+        // res.send(serialized);
+        const result = await CalculateDurationsByIntervall.calculate(startTimeUtc, endTimeUtc);
+        const serialized = Serialization.serialize(result);
+        res.send(serialized);
+    } catch (e) {
+        res.send(JSON.stringify(e, null, 4));
+    }
 };
 
 const rootRoute = router.route('/');
@@ -389,8 +414,12 @@ getDurationSumsTasks.get(asyncHandler(getDurationSumsTasksHandler))
 const getRunning = router.route(routesConfig.timeEntriesRunningSuffix);
 getRunning.get(asyncHandler(getRunningTimeEntryHandler));
 
+// timeEntriesStatisticsSufffix
+const getStatistics = router.route(routesConfig.timeEntriesStatisticsSufffix + '/*');
+getStatistics.get(asyncHandler(getStatisticsHandler));
 
-const getViaId = router.route('/*');
-getViaId.get(asyncHandler(getViaIdHandler));
+// TODO: FIXME introduce id suffix
+// const getViaId = router.route('/*');
+// getViaId.get(asyncHandler(getViaIdHandler));
 
 export default router;

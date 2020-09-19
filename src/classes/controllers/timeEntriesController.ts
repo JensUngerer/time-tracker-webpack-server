@@ -15,6 +15,55 @@ import { ITasksDocument } from '../../../../common/typescript/mongoDB/iTasksDocu
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
 
 export default {
+    getCategoryForTaskId(mongoDbOperations: MonogDbOperations, taskId: string) {
+        return new Promise<any>((resolve: (value?: any) => void, reject: (value?: any) => void) => {
+            let theQueryObj: FilterQuery<any> = {};
+            theQueryObj[routesConfig.taskIdProperty] = taskId;
+            const promise = mongoDbOperations.getFiltered(routesConfig.tasksCollectionName, theQueryObj);
+            promise.then((taskDocuments: ITasksDocument[]) => {
+                if (!taskDocuments || !taskDocuments.length || taskDocuments.length > 1) {
+                    reject('there is no tasks document (or more than one for) for taskId:' + taskId);
+                    return;
+                }
+                const firstDocument = taskDocuments[0];
+                resolve(firstDocument.taskCategory);
+            });
+            promise.catch((err: any) => {
+                reject(err);
+            });
+        });
+    },
+    getDurationsByInterval(mongoDbOperations: MonogDbOperations, startTimeUtc: Date, endTimeUtc: Date, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean) {
+        let theQueryObj: FilterQuery<any> = {};
+
+        // https://stackoverflow.com/questions/21286599/inserting-and-querying-date-with-mongodb-and-nodejs/21286896#21286896
+        theQueryObj[routesConfig.startTimeProperty] = {
+            '$gte':  startTimeUtc
+        };
+
+        // theQueryObj[routesConfig.startTimeProperty] = {
+        //     // "startTime": {
+        //         "$gte": {
+        //             $dateFromString: {
+        //                 dateString: startTimeUtc.toISOString()
+        //             }
+        //         }
+        //     // }
+        // };
+        theQueryObj[routesConfig.endDateProperty] = {
+            '$lt': endTimeUtc
+        };
+        if (typeof isDisabledPropertyName !== 'undefined'
+            && typeof isDisabledPropertyValue !== 'undefined') {
+            theQueryObj[isDisabledPropertyName] = isDisabledPropertyValue;
+        }
+
+        // DEBUGGING
+        // console.log(JSON.stringify(theQueryObj, null, 4));
+
+        const promise = mongoDbOperations.getFiltered(routesConfig.timEntriesCollectionName, theQueryObj);
+        return promise;
+    },
     getRunning(mongoDbOperations: MonogDbOperations) {
         const queryObj: any = {};
         queryObj[routesConfig.endDateProperty] = null;
@@ -27,24 +76,24 @@ export default {
         return new Promise<any>((resolve: (value: any) => void) => {
             let timeEntries: ITimeEntryDocument[] = [];
             let taskIdIndex = 0;
-            const promiseThenLoop = ()=>{
+            const promiseThenLoop = () => {
                 if (taskIdIndex < taskIds.length) {
                     const queryObj: FilterQuery<any> = {};
                     queryObj[routesConfig.taskIdPropertyAsForeignKey] = taskIds[taskIdIndex];
                     // NEW only use the non-committed timeEntry-documents
                     queryObj[routesConfig.isDeletedInClientProperty] = false;
-                
+
                     const promise = mongoDbOperations.getFiltered(routesConfig.timEntriesCollectionName, queryObj);
-                    promise.then((retrievedTimeEntries: ITimeEntryDocument[])=>{
+                    promise.then((retrievedTimeEntries: ITimeEntryDocument[]) => {
                         // DEBUGGING:
                         // console.error(JSON.stringify(retrievedTimeEntries, null, 4));
-                        
+
                         timeEntries = timeEntries.concat(retrievedTimeEntries);
 
                         taskIdIndex++;
                         promiseThenLoop();
                     });
-                    promise.catch(()=>{
+                    promise.catch(() => {
                         console.error('something went wrong when getting the timeEntries for index:' + taskIdIndex);
                         console.error(JSON.stringify(taskIds, null, 4));
 
@@ -59,11 +108,11 @@ export default {
             promiseThenLoop();
         });
     },
-    getTaskIdsForProjectId(projectId: string,  mongoDbOperations: MonogDbOperations) {
+    getTaskIdsForProjectId(projectId: string, mongoDbOperations: MonogDbOperations) {
         const queryObj: FilterQuery<any> = {};
         queryObj[routesConfig.projectIdPropertyAsForeignKey] = projectId;
         const tasksPromise = mongoDbOperations.getFiltered(routesConfig.tasksCollectionName, queryObj);
-        return new Promise<any>((resolve: (value: any) => void)=>{
+        return new Promise<any>((resolve: (value: any) => void) => {
             tasksPromise.then((retrievedTasks: ITasksDocument[]) => {
                 // DEBUGGING:
                 // console.error(JSON.stringify(retrievedTasks, null, 4));
@@ -74,13 +123,13 @@ export default {
                     resolve(false);
                     return;
                 }
-                retrievedTasks.forEach((oneTask: ITasksDocument)=>{
+                retrievedTasks.forEach((oneTask: ITasksDocument) => {
                     const currentTaskId = oneTask.taskId;
                     taskIds.push(currentTaskId);
                 });
                 resolve(taskIds);
             });
-            tasksPromise.catch(()=>{
+            tasksPromise.catch(() => {
                 console.error('error when trying to get tasks by projectId');
                 resolve(false);
             });
@@ -91,7 +140,7 @@ export default {
         queryObj[routesConfig.timeEntryIdProperty] = timeEntryId;
         const timeEntriesPromise = mongoDbOperations.getFiltered(routesConfig.timEntriesCollectionName, queryObj);
         return new Promise<any>((resolve: (value: any) => void) => {
-            timeEntriesPromise.then((theTimeEntriesDocs: ITimeEntryDocument[])=>{
+            timeEntriesPromise.then((theTimeEntriesDocs: ITimeEntryDocument[]) => {
                 let durationStr = '';
                 if (!theTimeEntriesDocs || theTimeEntriesDocs.length === 0) {
                     console.error('cannot get duration because of missing timeEntry-document');
@@ -106,7 +155,7 @@ export default {
                 resolve(durationStr);
             });
         });
-        
+
     },
     post(req: Request, mongoDbOperations: MonogDbOperations): Promise<any> {
         const body = Serialization.deSerialize<any>(req.body);
@@ -139,7 +188,7 @@ export default {
 
             let propertyName = routesConfig.dayPropertyName;
             let propertyValue: any = DurationCalculator.getDayFrom(startTime);
-            
+
             const patchPromise = mongoDbOperations.patch(propertyName, propertyValue, routesConfig.timEntriesCollectionName, theQueryObj);
             patchPromise.then(resolve);
             patchPromise.catch(reject);
@@ -147,7 +196,7 @@ export default {
     },
     patchStop(req: Request, mongoDbOperations: MonogDbOperations): Promise<any> {
         const body = Serialization.deSerialize<any>(req.body);
-        
+
         // stop operation
         const theQueryObj = RequestProcessingHelpers.getFilerQuery(req);
 
@@ -209,11 +258,11 @@ export default {
             const idPropertyName = body[routesConfig.httpPatchIdPropertyName];
             const timeEntryId = body[routesConfig.httpPatchIdPropertyValue];
             // https://mongodb.github.io/node-mongodb-native/3.2/tutorials/crud/
-            theQueryObj[idPropertyName] = timeEntryId;    
+            theQueryObj[idPropertyName] = timeEntryId;
         } else {
             theQueryObj = filterQuery;
         }
-        
+
         const propertyName = routesConfig.isDeletedInClientProperty;
         const propertyValue = true;
 
