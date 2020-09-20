@@ -342,22 +342,22 @@ const getRunningTimeEntryHandler = async (req: Request, res: Response) => {
     res.send(stringifiedResponse);
 };
 
-// const getViaIdHandler = async (req: Request, res: Response) => {
-//     const timeEntriesId = UrlHelpers.getIdFromUlr(req.url);
-//     const filterQuery: FilterQuery<any> = {};
-//     filterQuery[routesConfig.timeEntryIdProperty] = timeEntriesId;
-//     const timeEntriesPromise = timeEntriesController.get(req, App.mongoDbOperations, filterQuery);
-//     const timeEntries: ITimeEntryDocument[] = await timeEntriesPromise;
+const getViaIdHandler = async (req: Request, res: Response) => {
+    const timeEntriesId = UrlHelpers.getIdFromUlr(req.url);
+    const filterQuery: FilterQuery<any> = {};
+    filterQuery[routesConfig.timeEntryIdProperty] = timeEntriesId;
+    const timeEntriesPromise = timeEntriesController.get(req, App.mongoDbOperations, filterQuery);
+    const timeEntries: ITimeEntryDocument[] = await timeEntriesPromise;
 
-//     if (!timeEntries || timeEntries.length !== 1)  {
-//         console.error('no or more than one time entry found');
-//         res.send(null);
-//         return;
-//     }
+    if (!timeEntries || timeEntries.length !== 1)  {
+        console.error('no or more than one time entry found');
+        res.send(null);
+        return;
+    }
 
-//     const stringifiedResponse = Serialization.serialize(timeEntries[0]);
-//     res.send(stringifiedResponse);
-// };
+    const stringifiedResponse = Serialization.serialize(timeEntries[0]);
+    res.send(stringifiedResponse);
+};
 
 const getStatisticsHandler = async (req: Request, res: Response) => {
     const startTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.startTimeProperty);
@@ -467,7 +467,7 @@ const getStatistics = router.route(routesConfig.timeEntriesStatisticsSufffix + '
 getStatistics.get(asyncHandler(getStatisticsHandler));
 
 // TODO: FIXME introduce id suffix
-// const getViaId = router.route('/*');
-// getViaId.get(asyncHandler(getViaIdHandler));
+const getViaId = router.route('/*');
+getViaId.get(asyncHandler(getViaIdHandler));
 
 export default router;

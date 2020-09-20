@@ -9,6 +9,16 @@ import { FilterQuery } from 'mongodb';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
 
 export default {
+    getViaTaskId(taskId: string, mongoDbOperations: MonogDbOperations) {
+        const query: FilterQuery<any> = {};
+        query[routes.taskIdProperty] = taskId;
+
+        // DEBUGGING:
+        // console.log('tasksCollection:' + routes.tasksCollectionName);
+        // console.log(JSON.stringify(query, null, 4));
+
+        return mongoDbOperations.getFiltered(routes.tasksCollectionName, query);
+    },
     getViaProjectId(projectId: string, mongoDbOperations: MonogDbOperations) {
         const filterQuery: FilterQuery<any> = {};
         filterQuery[routes.projectIdPropertyAsForeignKey] = projectId;
