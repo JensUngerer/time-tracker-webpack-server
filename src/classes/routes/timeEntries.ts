@@ -466,7 +466,6 @@ getRunning.get(asyncHandler(getRunningTimeEntryHandler));
 const getStatistics = router.route(routesConfig.timeEntriesStatisticsSufffix + '/*');
 getStatistics.get(asyncHandler(getStatisticsHandler));
 
-// TODO: FIXME introduce id suffix
 const getViaId = router.route('/*');
 getViaId.get(asyncHandler(getViaIdHandler));
 
