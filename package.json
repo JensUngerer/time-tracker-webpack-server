@@ -7,7 +7,7 @@
     "type": "git",
     "url": ""
   },
-  "license": "MIT",
+  "license": "GPL",
   "scripts": {
     "start": "webpack --progress --env.development --env.nodemon",
     "start:prod": "webpack --progress --env.nodemon",
