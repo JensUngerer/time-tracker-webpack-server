@@ -16,7 +16,7 @@ const router = express.Router();
 router.use(routesConfig.timeRecord, timeRecordRoutes);
 router.use(routesConfig.task, taskRoute);
 router.use(routesConfig.project, projectRoute);
-router.use(routesConfig.timeEntries, timeEntries)
+router.use(routesConfig.timeEntries, timeEntries);
 router.use(routesConfig.bookingDeclaration, bookingDeclarationRoute);
 
 export default router;
