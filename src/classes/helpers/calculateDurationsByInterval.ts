@@ -1,7 +1,7 @@
 import { ITimeEntryDocument } from '../../../../common/typescript/mongoDB/iTimeEntryDocument';
 import App from '../../app';
 import timeEntriesController from '../controllers/timeEntriesController';
-import { ISummarizedTimeEntries } from './../../../../common/typescript/iSummarizedTimeEntries';
+import { ITimeSummaryByGroupCategory } from './../../../../common/typescript/iTimeSummary';
 // @ts-ignore
 import routesConfig from './../../../../common/typescript/routes.js';
 
@@ -70,7 +70,7 @@ export class CalculateDurationsByIntervall {
       // console.log(JSON.stringify(timeEntriesByCategory, null, 4));
 
       let durationSumOverAllCategories = 0.0;
-      const categoryBufferMap: { [groupCategory: string]: {[category: string]: ISummarizedTimeEntries } }= {};
+      const categoryBufferMap: ITimeSummaryByGroupCategory = {};
 
       for (const groupCategory in timeEntriesByCategory) {
         if (Object.prototype.hasOwnProperty.call(timeEntriesByCategory, groupCategory)) {
@@ -165,7 +165,7 @@ export class CalculateDurationsByIntervall {
       }
 
       // DEBUGGING:
-      console.log(JSON.stringify(categoryBufferMap, null, 4));
+      // console.log(JSON.stringify(categoryBufferMap, null, 4));
 
       return categoryBufferMap;
       // return Object.values(categoryBufferMap);

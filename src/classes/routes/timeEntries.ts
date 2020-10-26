@@ -15,6 +15,7 @@ import { RequestProcessingHelpers } from './../helpers/requestProcessingHelpers'
 import { UrlHelpers } from './../helpers/urlHelpers';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
 import { CalculateDurationsByIntervall } from '../helpers/calculateDurationsByInterval';
+import { ITimeSummary } from '../../../../common/typescript/iTimeSummary';
 // import { ITasksDocument } from '../../../../common/typescript/mongoDB/iTasksDocument';
 
 const router = express.Router();
@@ -357,6 +358,11 @@ const getViaIdHandler = async (req: Request, res: Response) => {
 };
 
 const getStatisticsHandler = async (req: Request, res: Response) => {
+  const groupCategory = UrlHelpers.getProperty(req.url, routesConfig.groupCategoryPropertyName);
+
+  // DEBUGGING:
+  // console.log(groupCategory);
+
   const startTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.startTimeProperty);
   const endTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.endDateProperty);
   if (!startTimeUtc || !endTimeUtc) {
@@ -375,11 +381,23 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     // res.send(serialized);
     // const returnValueByCategoryMap: { [category: string]: any[]} = {};
 
-    const summeries = await CalculateDurationsByIntervall.calculate(startTimeUtc, endTimeUtc);
-    if (!summeries) {
+    const summaries = await CalculateDurationsByIntervall.calculate(startTimeUtc, endTimeUtc);
+    if (!summaries) {
       console.error('no summaries');
       res.send('');
       return;
+    }
+
+    // for (const key in summaries) {
+    //   if (Object.prototype.hasOwnProperty.call(summaries, key)) {
+    //     const element: ITimeSummary = summaries[key];
+
+    //   }
+    // }
+    if (groupCategory !== null) {
+      const oneSummary: ITimeSummary = summaries[groupCategory];
+      const serialized = Serialization.serialize(oneSummary);
+      res.send(serialized);
     }
 
     // DEBUGGING:
@@ -419,8 +437,8 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     // DEBUGGING:
     // console.log(JSON.stringify(returnValueByCategoryMap, null, 4))
 
-    const serialized = Serialization.serialize(summeries);
-    res.send(serialized);
+    // const serialized = Serialization.serialize(summaries);
+    // res.send(serialized);
   } catch (e) {
     console.error(JSON.stringify(e, null, 4));
     res.send(JSON.stringify(e, null, 4));
