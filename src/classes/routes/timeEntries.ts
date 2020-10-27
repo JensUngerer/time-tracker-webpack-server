@@ -16,7 +16,7 @@ import { UrlHelpers } from './../helpers/urlHelpers';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
 import { CalculateDurationsByIntervall } from '../helpers/calculateDurationsByInterval';
 import { ITimeSummary } from '../../../../common/typescript/iTimeSummary';
-// import { ITasksDocument } from '../../../../common/typescript/mongoDB/iTasksDocument';
+import { ISummarizedTasks } from './../../../../common/typescript/summarizedData';
 
 const router = express.Router();
 
@@ -396,7 +396,10 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     // }
     if (groupCategory !== null) {
       const oneSummary: ITimeSummary = summaries[groupCategory];
-      const serialized = Serialization.serialize(oneSummary);
+      const summaryValues = Object.values(oneSummary);
+      const summaryByTaskCategories: ISummarizedTasks[] = await CalculateDurationsByIntervall.convertTimeSummaryToSummarizedTasks(summaryValues, App.mongoDbOperations);
+
+      const serialized = Serialization.serialize(summaryByTaskCategories);
       res.send(serialized);
     }
 

@@ -1,13 +1,68 @@
+import { ISummarizedTimeEntries } from '../../../../common/typescript/iSummarizedTimeEntries';
+import { ITasksDocument } from '../../../../common/typescript/mongoDB/iTasksDocument';
 import { ITimeEntryDocument } from '../../../../common/typescript/mongoDB/iTimeEntryDocument';
+import { ISummarizedTasks, ITaskLine } from '../../../../common/typescript/summarizedData';
 import App from '../../app';
+import taskController from '../controllers/taskController';
 import timeEntriesController from '../controllers/timeEntriesController';
 import { ITimeSummaryByGroupCategory } from './../../../../common/typescript/iTimeSummary';
 // @ts-ignore
 import routesConfig from './../../../../common/typescript/routes.js';
+import { MonogDbOperations } from './mongoDbOperations';
 
 export class CalculateDurationsByIntervall {
+  static async convertTimeSummaryToSummarizedTasks(input: ISummarizedTimeEntries[], mongoDbOperations: MonogDbOperations) {
+    const output: ISummarizedTasks[] = [];
+    const tasks = [];
+    for (let theOuterIndex = 0; theOuterIndex < input.length; theOuterIndex++) {
+      const oneParsedStatistics = input[theOuterIndex];
+      const taskIds = Object.keys(oneParsedStatistics.durationSumByTaskId);
+
+      if (!taskIds || !taskIds.length) {
+        console.error('there are no taskIds');
+        continue;
+      }
+
+      for (let theInnerIndex = 0; theInnerIndex < taskIds.length; theInnerIndex++) {
+        const oneTaskId = taskIds[theInnerIndex];
+        const oneParsedTask: ITasksDocument[] = await taskController.getViaTaskId(oneTaskId, mongoDbOperations);
+        if (oneParsedTask && oneParsedTask.length === 1) {
+          tasks.push(oneParsedTask[0]);
+        } else {
+          console.error('No task received');
+        }
+      }
+
+      const category = oneParsedStatistics.taskCategory;
+      const lines: ITaskLine[] = [];
+      tasks.forEach((oneTaskToMerge: ITasksDocument) => {
+        const oneTaskToMergeId = oneTaskToMerge.taskId;
+        const baseUrl = ''; // TODO: read config file! //this.configurationService.configuration.codeOrNumberBaseUrl;
+        const oneLine: ITaskLine = {
+          taskNumberUrl: baseUrl ? baseUrl + '/' + oneTaskToMerge.number : '',
+          taskNumber: oneTaskToMerge.number,
+          taskDescription: oneTaskToMerge.name,
+          durationInHours: oneParsedStatistics.durationSumByTaskId[oneTaskToMergeId],
+          durationFraction: oneParsedStatistics.durationSumFractionByTaskId[oneTaskToMergeId],
+        };
+        lines.push(oneLine);
+      });
+      const durationSum = oneParsedStatistics.overallDurationSum;
+      const durationFraction = oneParsedStatistics.overallDurationSumFraction;
+
+      output.push({
+        category,
+        lines,
+        durationSum,
+        durationFraction,
+      });
+
+    }
+    return output;
+  }
+
   static async getTimeEntriesByTaskCategory(timeEntryDocsByInterval: ITimeEntryDocument[]) {
-    return new Promise< { [groupCategory: string]: { [category: string]: ITimeEntryDocument[] } }>((resolve: (value?:  { [groupCategory: string]: { [category: string]: ITimeEntryDocument[] } }) => void) => {
+    return new Promise<{ [groupCategory: string]: { [category: string]: ITimeEntryDocument[] } }>((resolve: (value?: { [groupCategory: string]: { [category: string]: ITimeEntryDocument[] } }) => void) => {
       const timeEntriesByCategory: { [groupCategory: string]: { [category: string]: ITimeEntryDocument[] } } = {};
 
       let indexInTimeEntries = 0;
@@ -54,8 +109,8 @@ export class CalculateDurationsByIntervall {
   static async calculate(startTime: Date, endTime: Date, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean) {
     try {
       // DEBUGGING:
-      // console.log(startTime.toUTCString());
-      // console.log(endTime.toUTCString());
+      console.log(startTime.toUTCString());
+      console.log(endTime.toUTCString());
 
       const timeEntryDocsByIntervall: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTime, endTime, isDisabledPropertyName, isDisabledPropertyValue);
       if (!timeEntryDocsByIntervall || !timeEntryDocsByIntervall.length) {
