@@ -20,6 +20,15 @@ import { ISummarizedTasks } from './../../../../common/typescript/summarizedData
 
 const router = express.Router();
 
+const getNonCommittedDaysHandler = async (req: Request, res: Response) => {
+  // TODO: FIXME: make isDisabledProperty variable...
+  const isDisabledProperty = 'isDisabledInCommit';
+
+  const response = await timeEntriesController.getNonCommittedDays(App.mongoDbOperations, isDisabledProperty);
+  const stringifiedResponse = Serialization.serialize(response);
+  res.send(stringifiedResponse);
+};
+
 const getViaTaskId = async (req: Request, res: Response) => {
   const taskId = UrlHelpers.getIdFromUlr(req.url);
   const filterQuery: FilterQuery<any> = {};
@@ -83,7 +92,7 @@ const patchTimeEntriesStop = async (req: Request, res: Response) => {
   const theDocuments: ITimeEntryDocument[] = await timeEntriesController.get(req, App.mongoDbOperations, filterQuery);
 
   if (theDocuments &&
-        theDocuments.length === 1) {
+    theDocuments.length === 1) {
     const startTime = theDocuments[0].startTime;
     await timeEntriesController.patchDay(req, App.mongoDbOperations, startTime);
   } else {
@@ -327,7 +336,7 @@ const getDurationSumsTasksHandler = async (req: Request, res: Response) => {
 };
 
 const getRunningTimeEntryHandler = async (req: Request, res: Response) => {
-  const runningTimeEntries : ITimeEntryDocument[] = await timeEntriesController.getRunning(App.mongoDbOperations);
+  const runningTimeEntries: ITimeEntryDocument[] = await timeEntriesController.getRunning(App.mongoDbOperations);
   if (runningTimeEntries.length === 0) {
     res.send(Serialization.serialize(null));
     return;
@@ -347,7 +356,7 @@ const getViaIdHandler = async (req: Request, res: Response) => {
   const timeEntriesPromise = timeEntriesController.get(req, App.mongoDbOperations, filterQuery);
   const timeEntries: ITimeEntryDocument[] = await timeEntriesPromise;
 
-  if (!timeEntries || timeEntries.length !== 1)  {
+  if (!timeEntries || timeEntries.length !== 1) {
     console.error('no or more than one time entry found');
     res.send(null);
     return;
@@ -497,6 +506,9 @@ getRunning.get(asyncHandler(getRunningTimeEntryHandler));
 // timeEntriesStatisticsSufffix
 const getStatistics = router.route(routesConfig.timeEntriesStatisticsSufffix + '/*');
 getStatistics.get(asyncHandler(getStatisticsHandler));
+
+const getNonCommittedDays = router.route(routesConfig.nonCommittedDaysSuffix);
+getNonCommittedDays.get(asyncHandler(getNonCommittedDaysHandler));
 
 const getViaId = router.route('/*');
 getViaId.get(asyncHandler(getViaIdHandler));

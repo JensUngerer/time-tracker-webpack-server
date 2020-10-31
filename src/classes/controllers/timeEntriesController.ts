@@ -13,8 +13,41 @@ import { IPause } from '../../../../common/typescript/iPause';
 import { DurationCalculator } from './../../../../common/typescript/helpers/durationCalculator';
 import { ITasksDocument } from '../../../../common/typescript/mongoDB/iTasksDocument';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
+import { ITimeInterval } from './../../../../common/typescript/iTimeInterval';
 
 export default {
+  getNonCommittedDays(mongoDbOperations: MonogDbOperations, isDisabledProperty: string) {
+    const daysByStartTime:  { [startDateTime: number]: ITimeInterval } = {};
+    return new Promise((resolve: (value?: any) => void) => {
+      const theQueryObj: FilterQuery<any> = {};
+      theQueryObj[isDisabledProperty] = false;
+
+      const allNonDisabledTimeEntries = mongoDbOperations.getFiltered(routesConfig.timEntriesCollectionName, theQueryObj);
+      allNonDisabledTimeEntries.then((timeEntryDocs: ITimeEntryDocument[]) => {
+        // DEBUGGING:
+        // console.log(JSON.stringify(timeEntryDocs, null, 4));
+        if (!timeEntryDocs || !timeEntryDocs.length) {
+          resolve(null);
+          return;
+        }
+
+        timeEntryDocs.forEach((oneTimeEntry: ITimeEntryDocument) => {
+          const utcStartTime = DurationCalculator.getDayFrom(oneTimeEntry.startTime);
+          const utcEndTime = DurationCalculator.getLatestDayFrom(oneTimeEntry.startTime);
+          const valueToBeStored = { utcStartTime, utcEndTime };
+          const startTimeTime = utcStartTime.getTime();
+          if (!daysByStartTime[startTimeTime]) {
+            daysByStartTime[startTimeTime] = valueToBeStored;
+          }
+        });
+
+        // DEBUGGING:
+        // console.log(JSON.stringify(response, null, 4));
+
+        resolve(Object.values(daysByStartTime));
+      });
+    });
+  },
   getCategoryForTaskId(mongoDbOperations: MonogDbOperations, taskId: string, propertyName: string) {
     return new Promise<any>((resolve: (value?: any) => void, reject: (value?: any) => void) => {
       const theQueryObj: FilterQuery<any> = {};
@@ -38,7 +71,7 @@ export default {
 
     // https://stackoverflow.com/questions/21286599/inserting-and-querying-date-with-mongodb-and-nodejs/21286896#21286896
     theQueryObj[routesConfig.startTimeProperty] = {
-      '$gte':  startTimeUtc,
+      '$gte': startTimeUtc,
     };
 
     // theQueryObj[routesConfig.startTimeProperty] = {
@@ -54,7 +87,7 @@ export default {
       '$lt': endTimeUtc,
     };
     if (typeof isDisabledPropertyName !== 'undefined'
-            && typeof isDisabledPropertyValue !== 'undefined') {
+      && typeof isDisabledPropertyValue !== 'undefined') {
       theQueryObj[isDisabledPropertyName] = isDisabledPropertyValue;
     }
 
