@@ -14,7 +14,7 @@ export default {
         return new Promise((resolve: (value?: any) => void)=>{
             const queryObj: any = {};
             queryObj[routes.taskIdProperty] = taskId;
-    
+
             const taskDocuments = mongoDbOperations.getFiltered(routes.tasksCollectionName, queryObj);
             taskDocuments.then((taskDocuments: ITasksDocument[]) => {
                 if(taskDocuments.length !== 1) {
@@ -44,7 +44,7 @@ export default {
                 resolve(null);
             })
         });
-       
+
     },
     post(req: Request, mongoDbOperations: MonogDbOperations): Promise<any> {
         // DEBUGGING:
@@ -56,7 +56,7 @@ export default {
         // console.log(JSON.stringify(body, null, 4));
 
         const project: IProject = body[routes.projectBodyProperty];
-        
+
         const extendedProject: IProjectsDocument = _.clone(project) as IProjectsDocument;
         extendedProject.isDisabled = false;
         // should not be necessary
@@ -74,9 +74,9 @@ export default {
     },
     patch(req: Request, mongoDbOperations: MonogDbOperations): Promise<any> {
         const body = Serialization.deSerialize<any>(req.body);
-        
+
         // DEBUGGING:
-        console.log(JSON.stringify(body, null, 4));
+        // console.log(JSON.stringify(body, null, 4));
 
         const propertyName = body[routes.httpPatchIdPropertyToUpdateName]; // 'isDeletedInClient';
         const propertyValue = body[routes.httpPatchIdPropertyToUpdateValue]; //true;

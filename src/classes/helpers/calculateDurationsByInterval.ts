@@ -91,6 +91,7 @@ export class CalculateDurationsByIntervall {
           indexInTimeEntries++;
           loop();
         } catch (e) {
+          console.error('getTimeEntriesByTaskCategory threw an error:');
           console.error(e);
           // next iteration in loop
           indexInTimeEntries++;
@@ -109,8 +110,8 @@ export class CalculateDurationsByIntervall {
   static async calculate(startTime: Date, endTime: Date, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean) {
     try {
       // DEBUGGING:
-      console.log(startTime.toUTCString());
-      console.log(endTime.toUTCString());
+      // console.log(startTime.toUTCString());
+      // console.log(endTime.toUTCString());
 
       const timeEntryDocsByIntervall: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTime, endTime, isDisabledPropertyName, isDisabledPropertyValue);
       if (!timeEntryDocsByIntervall || !timeEntryDocsByIntervall.length) {
@@ -227,6 +228,7 @@ export class CalculateDurationsByIntervall {
       // return null;
     }
     catch (e) {
+      console.error('outer exception:');
       console.error(e);
       console.error(JSON.stringify(e, null, 4));
       return e;

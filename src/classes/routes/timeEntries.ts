@@ -371,7 +371,8 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     return;
   }
 
-  //  DEBUGGING
+  // //  DEBUGGING
+  // console.log(groupCategory);
   // console.log(startTimeUtc.toUTCString());
   // console.log(endTimeUtc.toUTCString());
   try {
@@ -381,13 +382,15 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     // res.send(serialized);
     // const returnValueByCategoryMap: { [category: string]: any[]} = {};
 
+    // console.log('summeries begin');
     const summaries = await CalculateDurationsByIntervall.calculate(startTimeUtc, endTimeUtc);
     if (!summaries) {
-      console.error('no summaries');
+      // console.error('no summaries');
       res.send('');
       return;
     }
-
+    // console.log(JSON.stringify(summaries, null, 4));
+    // console.log('summaries end');
     // for (const key in summaries) {
     //   if (Object.prototype.hasOwnProperty.call(summaries, key)) {
     //     const element: ITimeSummary = summaries[key];
@@ -395,12 +398,22 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     //   }
     // }
     if (groupCategory !== null) {
+      // console.log('begin oneSummary for:' + groupCategory);
+      // console.log(JSON.stringify(summaries, null, 4));
       const oneSummary: ITimeSummary = summaries[groupCategory];
+      if (!oneSummary) {
+        console.error('there is no summary for:' + groupCategory);
+        res.send('');
+        return;
+      }
       const summaryValues = Object.values(oneSummary);
       const summaryByTaskCategories: ISummarizedTasks[] = await CalculateDurationsByIntervall.convertTimeSummaryToSummarizedTasks(summaryValues, App.mongoDbOperations);
 
       const serialized = Serialization.serialize(summaryByTaskCategories);
       res.send(serialized);
+      // console.log('end oneSummary for:' + groupCategory);
+    } else {
+      console.error('groupCategory from url is null');
     }
 
     // DEBUGGING:
@@ -443,6 +456,7 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     // const serialized = Serialization.serialize(summaries);
     // res.send(serialized);
   } catch (e) {
+    console.error('timeEntries.getStatisticsHandler error:');
     console.error(JSON.stringify(e, null, 4));
     res.send(JSON.stringify(e, null, 4));
   }
