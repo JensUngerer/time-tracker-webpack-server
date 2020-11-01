@@ -16,6 +16,7 @@ export class CalculateDurationsByIntervall {
     const tasks = [];
     for (let theOuterIndex = 0; theOuterIndex < input.length; theOuterIndex++) {
       const oneParsedStatistics = input[theOuterIndex];
+      const _timeEntryIds = oneParsedStatistics._timeEntryIds;
       const taskIds = Object.keys(oneParsedStatistics.durationSumByTaskId);
 
       if (!taskIds || !taskIds.length) {
@@ -51,6 +52,7 @@ export class CalculateDurationsByIntervall {
       const durationFraction = oneParsedStatistics.overallDurationSumFraction;
 
       output.push({
+        _timeEntryIds,
         category,
         lines,
         durationSum,
