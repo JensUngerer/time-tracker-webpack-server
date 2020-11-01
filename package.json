@@ -13,6 +13,7 @@
     "start:prod": "webpack --progress --env.nodemon",
     "build:prod": "webpack --progress",
     "build:ci": "webpack",
+    "build:dev": "webpack --env.development",
     "build:docker": "docker build --rm -t toxsickcoder/node-typescript-starter:latest .",
     "deploy:docker": "sh ./scripts/deploy.sh",
     "analyse:dev": "webpack --progress --env.development --env.analyse && start dist/report.html",
