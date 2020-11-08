@@ -21,7 +21,7 @@ const postTimeRecord = async (req: Request, res: Response) => {
 
     // a) write into db
     await timeRecordController.post(collectionName, line, App.mongoDbOperations);
-        
+
     // b) mark timeEntries as isDeletedInClient
     let markAsDeletedResult = null;
     if (collectionName === routes.timeRecordsCollectionName) {
@@ -35,6 +35,6 @@ const postTimeRecord = async (req: Request, res: Response) => {
     res.json(markAsDeletedResult);
 };
 
-router.route('/').post(asyncHandler(postTimeRecord))
+router.route('/').post(asyncHandler(postTimeRecord));
 
 export default router;

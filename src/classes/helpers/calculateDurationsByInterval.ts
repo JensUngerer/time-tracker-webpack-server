@@ -36,10 +36,15 @@ export class CalculateDurationsByIntervall {
 
       const category = oneParsedStatistics.taskCategory;
       const lines: ITaskLine[] = [];
-      tasks.forEach((oneTaskToMerge: ITasksDocument) => {
+      for (let index = 0; index < tasks.length; index++) {
+        const oneTaskToMerge = tasks[index];
+        const correspondingTimeEntries: ITimeEntryDocument[] = await timeEntriesController.getTimeEntriesForTaskIds([oneTaskToMerge.taskId], App.mongoDbOperations);
+        const correspondingTimeEntryIds: string[] = correspondingTimeEntries.map(oneTimeEntry=> oneTimeEntry.timeEntryId);
         const oneTaskToMergeId = oneTaskToMerge.taskId;
-        const baseUrl = ''; // TODO: read config file! //this.configurationService.configuration.codeOrNumberBaseUrl;
+        const baseUrl = ''; // is being filled in client?
         const oneLine: ITaskLine = {
+          _taskId: oneTaskToMerge.taskId,
+          _timeEntryIds: correspondingTimeEntryIds,
           taskNumberUrl: baseUrl ? baseUrl + '/' + oneTaskToMerge.number : '',
           taskNumber: oneTaskToMerge.number,
           taskDescription: oneTaskToMerge.name,
@@ -47,7 +52,7 @@ export class CalculateDurationsByIntervall {
           durationFraction: oneParsedStatistics.durationSumFractionByTaskId[oneTaskToMergeId],
         };
         lines.push(oneLine);
-      });
+      }
       const durationSum = oneParsedStatistics.overallDurationSum;
       const durationFraction = oneParsedStatistics.overallDurationSumFraction;
 
