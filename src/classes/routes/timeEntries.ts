@@ -368,10 +368,10 @@ const getViaIdHandler = async (req: Request, res: Response) => {
 
 const getStatisticsHandler = async (req: Request, res: Response) => {
   const isRawBookingBased = UrlHelpers.getProperty(req.url, routesConfig.isBookingBasedPropertyName);
-  const isBookingBased = Boolean(isRawBookingBased);
+  const isBookingBased = JSON.parse(isRawBookingBased as string);
 
   // DEBUGGING:
-  console.log(isBookingBased);
+  // console.log(isBookingBased);
 
   const groupCategory = UrlHelpers.getProperty(req.url, routesConfig.groupCategoryPropertyName);
 

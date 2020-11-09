@@ -227,7 +227,7 @@ export class CalculateDurationsByInterval {
     return categoryBufferMap;
   }
 
-  static async calculate(startTime: Date, endTime: Date, isTaskBased: boolean, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean) {
+  static async calculate(startTime: Date, endTime: Date, isBookingBased: boolean, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean) {
     try {
       // DEBUGGING:
       // console.log(startTime.toUTCString());
@@ -238,7 +238,7 @@ export class CalculateDurationsByInterval {
         console.error('no time entries to calculate duration from');
         return null;
       }
-      if (isTaskBased) {
+      if (!isBookingBased) {
         return CalculateDurationsByInterval.getByGroupCategory(timeEntryDocsByInterval);
       } else {
         return CalculateDurationsByInterval.getByBookingDeclaration(timeEntryDocsByInterval);
