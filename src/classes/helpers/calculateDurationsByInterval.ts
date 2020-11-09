@@ -10,7 +10,7 @@ import { ITimeSummaryByGroupCategory } from './../../../../common/typescript/iTi
 import routesConfig from './../../../../common/typescript/routes.js';
 import { MonogDbOperations } from './mongoDbOperations';
 
-export class CalculateDurationsByIntervall {
+export class CalculateDurationsByInterval {
   static async convertTimeSummaryToSummarizedTasks(input: ISummarizedTimeEntries[], mongoDbOperations: MonogDbOperations) {
     const output: ISummarizedTasks[] = [];
     const tasks = [];
@@ -114,123 +114,135 @@ export class CalculateDurationsByIntervall {
     return timeEntry.endTime.getTime() - timeEntry.startTime.getTime();
   }
 
-  static async calculate(startTime: Date, endTime: Date, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean) {
+  private static async getByBookingDeclaration(timeEntryDocsByInterval: ITimeEntryDocument[]) {
+    return null;
+  }
+
+  private static async getByGroupCategory(timeEntryDocsByInterval: ITimeEntryDocument[]): Promise<ITimeSummaryByGroupCategory> {
+    const durationSumByTaskIdMap: { [category: string]: { [taskId: string]: number } } = {};
+    const durationSumFractionByTaskIdMap: { [category: string]: { [taskId: string]: number } } = {};
+    const timeEntriesByCategory = await this.getTimeEntriesByTaskCategory(timeEntryDocsByInterval);
+
+    // DEBUGGING:
+    // console.log(JSON.stringify(timeEntriesByCategory, null, 4));
+
+    let durationSumOverAllCategories = 0.0;
+    const categoryBufferMap: ITimeSummaryByGroupCategory = {};
+
+    for (const groupCategory in timeEntriesByCategory) {
+      if (Object.prototype.hasOwnProperty.call(timeEntriesByCategory, groupCategory)) {
+        const oneTimeEntryBufferByGroupCategory = timeEntriesByCategory[groupCategory];
+
+        // DEBUGGING:
+        // console.log(JSON.stringify(oneTimeEntryBufferByGroupCategory, null, 4));
+
+        for (const taskCategory in oneTimeEntryBufferByGroupCategory) {
+          if (!durationSumByTaskIdMap[taskCategory]) {
+            durationSumByTaskIdMap[taskCategory] = {};
+          }
+          if (!durationSumFractionByTaskIdMap[taskCategory]) {
+            durationSumFractionByTaskIdMap[taskCategory] = {};
+          }
+          if (Object.prototype.hasOwnProperty.call(oneTimeEntryBufferByGroupCategory, taskCategory)) {
+            const timeEntriesOfOneCategory: ITimeEntryDocument[] = oneTimeEntryBufferByGroupCategory[taskCategory];
+
+            // DEBUGGING:
+            // console.log(JSON.stringify(timeEntriesOfOneCategory));
+
+            const oneTimeEntryIds: string[] = [];
+            // const oneTaskIds: string[] = [];
+            let oneOverallSum = 0.0;
+            timeEntriesOfOneCategory.forEach(oneTimeEntry => {
+              const oneDuration = this.getDurationOfTimeEntry(oneTimeEntry);
+
+              if (typeof durationSumByTaskIdMap[taskCategory][oneTimeEntry._taskId] === 'undefined') {
+                durationSumByTaskIdMap[taskCategory][oneTimeEntry._taskId] = 0;
+              }
+              durationSumByTaskIdMap[taskCategory][oneTimeEntry._taskId] += oneDuration;
+
+              oneOverallSum += oneDuration;
+              oneTimeEntryIds.push(oneTimeEntry.timeEntryId);
+              // oneTaskIds.push(oneTimeEntry._taskId);
+            });
+            if (!categoryBufferMap[groupCategory]) {
+              categoryBufferMap[groupCategory] = {};
+            }
+            categoryBufferMap[groupCategory][taskCategory] = {
+              taskCategory: taskCategory,
+              overallDurationSum: oneOverallSum,
+              overallDurationSumFraction: -1.0,
+              _timeEntryIds: oneTimeEntryIds,
+              durationSumByTaskId: durationSumByTaskIdMap[taskCategory],
+              durationSumFractionByTaskId: durationSumFractionByTaskIdMap[taskCategory],
+              // taskIds: oneTaskIds
+            };
+            durationSumOverAllCategories += oneOverallSum;
+          }
+        }
+
+      }
+    }
+
+
+    // DEBUGGING:
+    // console.log(JSON.stringify(categoryBufferMap, null, 4));
+
+    for (const taskCategory in durationSumByTaskIdMap) {
+      if (Object.prototype.hasOwnProperty.call(durationSumByTaskIdMap, taskCategory)) {
+        // const element = durationSumByTaskIdMap[taskCategory];
+        for (const taskId in durationSumByTaskIdMap[taskCategory]) {
+          if (Object.prototype.hasOwnProperty.call(durationSumByTaskIdMap[taskCategory], taskId)) {
+            const absolutedurationSumByTaskId = durationSumByTaskIdMap[taskCategory][taskId];
+            durationSumFractionByTaskIdMap[taskCategory][taskId] = absolutedurationSumByTaskId / durationSumOverAllCategories;
+
+            // convert to hours:
+            durationSumByTaskIdMap[taskCategory][taskId] = (((absolutedurationSumByTaskId / 1000) / 60) / 60);
+          }
+        }
+      }
+    }
+
+    // DEBUGGING:
+    // console.log(JSON.stringify(categoryBufferMap, null, 4));
+
+    for (const oneGroupCatName in categoryBufferMap) {
+      if (Object.prototype.hasOwnProperty.call(categoryBufferMap, oneGroupCatName)) {
+        const oneSubMapForSpecificGroupCat = categoryBufferMap[oneGroupCatName];
+        for (const oneTaskCat in oneSubMapForSpecificGroupCat) {
+          if (Object.prototype.hasOwnProperty.call(oneSubMapForSpecificGroupCat, oneTaskCat)) {
+            const sumEntry = oneSubMapForSpecificGroupCat[oneTaskCat];
+            sumEntry.overallDurationSumFraction = sumEntry.overallDurationSum / durationSumOverAllCategories;
+
+            // convert to hours:
+            oneSubMapForSpecificGroupCat[oneTaskCat].overallDurationSum = (((oneSubMapForSpecificGroupCat[oneTaskCat].overallDurationSum / 1000) / 60) / 60);
+          }
+        }
+
+      }
+    }
+
+    // DEBUGGING:
+    // console.log(JSON.stringify(categoryBufferMap, null, 4));
+
+    return categoryBufferMap;
+  }
+
+  static async calculate(startTime: Date, endTime: Date, isTaskBased: boolean, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean) {
     try {
       // DEBUGGING:
       // console.log(startTime.toUTCString());
       // console.log(endTime.toUTCString());
 
-      const timeEntryDocsByIntervall: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTime, endTime, isDisabledPropertyName, isDisabledPropertyValue);
-      if (!timeEntryDocsByIntervall || !timeEntryDocsByIntervall.length) {
+      const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTime, endTime, isDisabledPropertyName, isDisabledPropertyValue);
+      if (!timeEntryDocsByInterval || !timeEntryDocsByInterval.length) {
         console.error('no time entries to calculate duration from');
         return null;
       }
-      const durationSumByTaskIdMap: { [category: string]: { [taskId: string]: number } } = {};
-      const durationSumFractionByTaskIdMap: { [category: string]: { [taskId: string]: number } } = {};
-      const timeEntriesByCategory = await this.getTimeEntriesByTaskCategory(timeEntryDocsByIntervall);
-
-      // DEBUGGING:
-      // console.log(JSON.stringify(timeEntriesByCategory, null, 4));
-
-      let durationSumOverAllCategories = 0.0;
-      const categoryBufferMap: ITimeSummaryByGroupCategory = {};
-
-      for (const groupCategory in timeEntriesByCategory) {
-        if (Object.prototype.hasOwnProperty.call(timeEntriesByCategory, groupCategory)) {
-          const oneTimeEntryBufferByGroupCategory = timeEntriesByCategory[groupCategory];
-
-          // DEBUGGING:
-          // console.log(JSON.stringify(oneTimeEntryBufferByGroupCategory, null, 4));
-
-          for (const taskCategory in oneTimeEntryBufferByGroupCategory) {
-            if (!durationSumByTaskIdMap[taskCategory]) {
-              durationSumByTaskIdMap[taskCategory] = {};
-            }
-            if (!durationSumFractionByTaskIdMap[taskCategory]) {
-              durationSumFractionByTaskIdMap[taskCategory] = {};
-            }
-            if (Object.prototype.hasOwnProperty.call(oneTimeEntryBufferByGroupCategory, taskCategory)) {
-              const timeEntriesOfOneCategory: ITimeEntryDocument[] = oneTimeEntryBufferByGroupCategory[taskCategory];
-
-              // DEBUGGING:
-              // console.log(JSON.stringify(timeEntriesOfOneCategory));
-
-              const oneTimeEntryIds: string[] = [];
-              // const oneTaskIds: string[] = [];
-              let oneOverallSum = 0.0;
-              timeEntriesOfOneCategory.forEach(oneTimeEntry => {
-                const oneDuration = this.getDurationOfTimeEntry(oneTimeEntry);
-
-                if (typeof durationSumByTaskIdMap[taskCategory][oneTimeEntry._taskId] === 'undefined') {
-                  durationSumByTaskIdMap[taskCategory][oneTimeEntry._taskId] = 0;
-                }
-                durationSumByTaskIdMap[taskCategory][oneTimeEntry._taskId] += oneDuration;
-
-                oneOverallSum += oneDuration;
-                oneTimeEntryIds.push(oneTimeEntry.timeEntryId);
-                // oneTaskIds.push(oneTimeEntry._taskId);
-              });
-              if (!categoryBufferMap[groupCategory]) {
-                categoryBufferMap[groupCategory] = {};
-              }
-              categoryBufferMap[groupCategory][taskCategory] = {
-                taskCategory: taskCategory,
-                overallDurationSum: oneOverallSum,
-                overallDurationSumFraction: -1.0,
-                _timeEntryIds: oneTimeEntryIds,
-                durationSumByTaskId: durationSumByTaskIdMap[taskCategory],
-                durationSumFractionByTaskId: durationSumFractionByTaskIdMap[taskCategory],
-                // taskIds: oneTaskIds
-              };
-              durationSumOverAllCategories += oneOverallSum;
-            }
-          }
-
-        }
+      if (isTaskBased) {
+        return CalculateDurationsByInterval.getByGroupCategory(timeEntryDocsByInterval);
+      } else {
+        return CalculateDurationsByInterval.getByBookingDeclaration(timeEntryDocsByInterval);
       }
-
-
-      // DEBUGGING:
-      // console.log(JSON.stringify(categoryBufferMap, null, 4));
-
-      for (const taskCategory in durationSumByTaskIdMap) {
-        if (Object.prototype.hasOwnProperty.call(durationSumByTaskIdMap, taskCategory)) {
-          // const element = durationSumByTaskIdMap[taskCategory];
-          for (const taskId in durationSumByTaskIdMap[taskCategory]) {
-            if (Object.prototype.hasOwnProperty.call(durationSumByTaskIdMap[taskCategory], taskId)) {
-              const absolutedurationSumByTaskId = durationSumByTaskIdMap[taskCategory][taskId];
-              durationSumFractionByTaskIdMap[taskCategory][taskId] = absolutedurationSumByTaskId / durationSumOverAllCategories;
-
-              // convert to hours:
-              durationSumByTaskIdMap[taskCategory][taskId] = (((absolutedurationSumByTaskId / 1000) / 60) / 60);
-            }
-          }
-        }
-      }
-
-      // DEBUGGING:
-      // console.log(JSON.stringify(categoryBufferMap, null, 4));
-
-      for (const oneGroupCatName in categoryBufferMap) {
-        if (Object.prototype.hasOwnProperty.call(categoryBufferMap, oneGroupCatName)) {
-          const oneSubMapForSpecificGroupCat = categoryBufferMap[oneGroupCatName];
-          for (const oneTaskCat in oneSubMapForSpecificGroupCat) {
-            if (Object.prototype.hasOwnProperty.call(oneSubMapForSpecificGroupCat, oneTaskCat)) {
-              const sumEntry = oneSubMapForSpecificGroupCat[oneTaskCat];
-              sumEntry.overallDurationSumFraction = sumEntry.overallDurationSum / durationSumOverAllCategories;
-
-              // convert to hours:
-              oneSubMapForSpecificGroupCat[oneTaskCat].overallDurationSum = (((oneSubMapForSpecificGroupCat[oneTaskCat].overallDurationSum / 1000) / 60) / 60);
-            }
-          }
-
-        }
-      }
-
-      // DEBUGGING:
-      // console.log(JSON.stringify(categoryBufferMap, null, 4));
-
-      return categoryBufferMap;
       // return Object.values(categoryBufferMap);
       // return null;
     }

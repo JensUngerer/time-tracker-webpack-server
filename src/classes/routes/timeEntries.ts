@@ -14,7 +14,7 @@ import timeEntriesController from './../controllers/timeEntriesController';
 import { RequestProcessingHelpers } from './../helpers/requestProcessingHelpers';
 import { UrlHelpers } from './../helpers/urlHelpers';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
-import { CalculateDurationsByIntervall } from '../helpers/calculateDurationsByInterval';
+import { CalculateDurationsByInterval } from '../helpers/calculateDurationsByInterval';
 import { ITimeSummary } from '../../../../common/typescript/iTimeSummary';
 import { ISummarizedTasks } from './../../../../common/typescript/summarizedData';
 
@@ -367,6 +367,12 @@ const getViaIdHandler = async (req: Request, res: Response) => {
 };
 
 const getStatisticsHandler = async (req: Request, res: Response) => {
+  const isRawBookingBased = UrlHelpers.getProperty(req.url, routesConfig.isBookingBasedPropertyName);
+  const isBookingBased = Boolean(isRawBookingBased);
+
+  // DEBUGGING:
+  console.log(isBookingBased);
+
   const groupCategory = UrlHelpers.getProperty(req.url, routesConfig.groupCategoryPropertyName);
 
   // DEBUGGING:
@@ -392,7 +398,7 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     // const returnValueByCategoryMap: { [category: string]: any[]} = {};
 
     // console.log('summeries begin');
-    const summaries = await CalculateDurationsByIntervall.calculate(startTimeUtc, endTimeUtc);
+    const summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased);
     if (!summaries) {
       // console.error('no summaries');
       res.send('');
@@ -416,7 +422,7 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
         return;
       }
       const summaryValues = Object.values(oneSummary);
-      const summaryByTaskCategories: ISummarizedTasks[] = await CalculateDurationsByIntervall.convertTimeSummaryToSummarizedTasks(summaryValues, App.mongoDbOperations);
+      const summaryByTaskCategories: ISummarizedTasks[] = await CalculateDurationsByInterval.convertTimeSummaryToSummarizedTasks(summaryValues, App.mongoDbOperations);
 
       const serialized = Serialization.serialize(summaryByTaskCategories);
       res.send(serialized);
@@ -503,7 +509,6 @@ getDurationSumsTasks.get(asyncHandler(getDurationSumsTasksHandler));
 const getRunning = router.route(routesConfig.timeEntriesRunningSuffix);
 getRunning.get(asyncHandler(getRunningTimeEntryHandler));
 
-// timeEntriesStatisticsSufffix
 const getStatistics = router.route(routesConfig.timeEntriesStatisticsSufffix + '/*');
 getStatistics.get(asyncHandler(getStatisticsHandler));
 
