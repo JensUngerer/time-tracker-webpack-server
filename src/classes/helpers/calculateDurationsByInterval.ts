@@ -13,8 +13,8 @@ import { MonogDbOperations } from './mongoDbOperations';
 export class CalculateDurationsByInterval {
   static async convertTimeSummaryToSummarizedTasks(input: ISummarizedTimeEntries[], mongoDbOperations: MonogDbOperations) {
     const output: ISummarizedTasks[] = [];
-    const tasks = [];
     for (let theOuterIndex = 0; theOuterIndex < input.length; theOuterIndex++) {
+      const tasks = [];
       const oneParsedStatistics = input[theOuterIndex];
       const _timeEntryIds = oneParsedStatistics._timeEntryIds;
       const taskIds = Object.keys(oneParsedStatistics.durationSumByTaskId);
