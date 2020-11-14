@@ -21,8 +21,14 @@ import { ISummarizedTasks } from './../../../../common/typescript/summarizedData
 const router = express.Router();
 
 const getNonCommittedDaysHandler = async (req: Request, res: Response) => {
-  // TODO: FIXME: make isDisabledProperty variable...
-  const isDisabledProperty = 'isDisabledInCommit';
+  const isRawBookingBased = UrlHelpers.getProperty(req.url, routesConfig.isBookingBasedPropertyName);
+  const isBookingBased = JSON.parse(isRawBookingBased as string);
+  let isDisabledProperty;
+  if(isBookingBased) {
+    isDisabledProperty = routesConfig.isDeletedInClientProperty;
+  } else {
+    isDisabledProperty = routesConfig.isDisabledInCommit;
+  }
 
   const response = await timeEntriesController.getNonCommittedDays(App.mongoDbOperations, isDisabledProperty);
   const stringifiedResponse = Serialization.serialize(response);
