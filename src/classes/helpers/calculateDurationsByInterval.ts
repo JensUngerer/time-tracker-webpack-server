@@ -175,6 +175,8 @@ export class CalculateDurationsByInterval {
           identifierUrl: '',
           durationFraction: -1.0,
           durationInHours: durationInHours,
+          uniqueId: _bookingDeclarationId,
+          _timeEntryIds: timeEntryDocsByInterval.map(tE => tE.timeEntryId)
         });
       }
     }
@@ -187,6 +189,8 @@ export class CalculateDurationsByInterval {
         durationInHours: oneTemporaryBufferEntry.durationInHours,
         identifier: oneTemporaryBufferEntry.identifier,
         identifierUrl: oneTemporaryBufferEntry.identifierUrl,
+        uniqueId: oneTemporaryBufferEntry.uniqueId,
+        _timeEntryIds: oneTemporaryBufferEntry._timeEntryIds,
       });
     });
 
