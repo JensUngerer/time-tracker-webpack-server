@@ -369,7 +369,8 @@ const getViaIdHandler = async (req: Request, res: Response) => {
 const getStatisticsHandler = async (req: Request, res: Response) => {
   const isRawBookingBased = UrlHelpers.getProperty(req.url, routesConfig.isBookingBasedPropertyName);
   const isBookingBased = JSON.parse(isRawBookingBased as string);
-
+  const isTakenCareIsDisabledRaw = UrlHelpers.getProperty(req.url, routesConfig.isTakenCareIsDisabledPropertyName);
+  const isTakenCareIsDisabled = JSON.parse(isTakenCareIsDisabledRaw as string);
   // DEBUGGING:
   // console.log(isBookingBased);
 
@@ -400,7 +401,16 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     // const returnValueByCategoryMap: { [category: string]: any[]} = {};
 
     // console.log('summeries begin');
-    const summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased);
+    let summaries;
+    if (!isTakenCareIsDisabled) {
+      summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased);
+    } else {
+      if (isBookingBased) {
+        summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, routesConfig.isDeletedInClientProperty, false);
+      } else {
+        summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, routesConfig.isDisabledInCommit, false);
+      }
+    }
     if (!summaries) {
       // console.error('no summaries');
       res.send('');
