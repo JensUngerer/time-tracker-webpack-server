@@ -10,6 +10,7 @@ import { ITimeSummaryByGroupCategory } from './../../../../common/typescript/iTi
 // @ts-ignore
 import routesConfig from './../../../../common/typescript/routes.js';
 import { MonogDbOperations } from './mongoDbOperations';
+import { IStatistic } from './../../../../common/typescript/iStatistic';
 
 export class CalculateDurationsByInterval {
   static async aggregateSummarizedTasks(input: ITimeEntryDocument[], mongoDbOperations: MonogDbOperations): Promise<ISummarizedTasks[]> {
@@ -119,7 +120,9 @@ export class CalculateDurationsByInterval {
   }
 
   private static async getByBookingDeclaration(timeEntryDocsByInterval: ITimeEntryDocument[]) {
-    const outputBuffer: any[] = [];
+    const hoursInMilliseconds = (1000 * 60 * 60);
+    const outputBuffer: IStatistic[] = [];
+
 
     if (!timeEntryDocsByInterval ||
       !timeEntryDocsByInterval.length) {
@@ -137,6 +140,7 @@ export class CalculateDurationsByInterval {
       mapByBookingDeclarationId[bookingDeclarationId].push(oneTimeEntry)
     }
 
+    let overallDurationSumInMilliseconds = 0.0;
     for (const _bookingDeclarationId in mapByBookingDeclarationId) {
       if (Object.prototype.hasOwnProperty.call(mapByBookingDeclarationId, _bookingDeclarationId)) {
         const oneBufferOfTimeEntries = mapByBookingDeclarationId[_bookingDeclarationId];
@@ -149,6 +153,7 @@ export class CalculateDurationsByInterval {
         for (const oneTimeEntry of oneBufferOfTimeEntries) {
           const oneDurationInMilliseconds = oneTimeEntry.endTime.getTime() - oneTimeEntry.startTime.getTime();
           durationInMilliseconds += oneDurationInMilliseconds;
+          overallDurationSumInMilliseconds += oneDurationInMilliseconds;
         }
 
         const bookingsPromise = timeEntriesController.getBooking(_bookingDeclarationId, App.mongoDbOperations);
@@ -162,16 +167,29 @@ export class CalculateDurationsByInterval {
         const oneBookingDoc: IBookingDeclarationsDocument = bookingDocs[0];
         const code = oneBookingDoc.code;
         const description = oneBookingDoc.description;
-        const durationInHours = durationInMilliseconds / (1000 * 60 * 60);
+        const durationInHours = durationInMilliseconds / hoursInMilliseconds;
+
         outputBuffer.push({
-          durationInHours,
-          _bookingDeclarationId,
-          taskNumber: code,
-          taskDescription: description,
-          durationFraction: 1.00
+          description: description,
+          identifier: code,
+          identifierUrl: '',
+          durationFraction: -1.0,
+          durationInHours: durationInHours,
         });
       }
     }
+    const overallDurationInHours = overallDurationSumInMilliseconds / hoursInMilliseconds;
+    const statistics: IStatistic[] = [];
+    outputBuffer.forEach((oneTemporaryBufferEntry) => {
+      statistics.push({
+        description: oneTemporaryBufferEntry.description,
+        durationFraction: oneTemporaryBufferEntry.durationInHours / overallDurationInHours,
+        durationInHours: oneTemporaryBufferEntry.durationInHours,
+        identifier: oneTemporaryBufferEntry.identifier,
+        identifierUrl: oneTemporaryBufferEntry.identifierUrl,
+      });
+    });
+
     // for (const oneBufferOfCorrespondingEntries of mapByBookingDeclarationId) {
     //   console.log(oneBufferOfCorrespondingEntries);
     // }
@@ -190,7 +208,7 @@ export class CalculateDurationsByInterval {
     // console.log(oneBookingDoc);
     // console.log(oneTimeEntry);
 
-    return outputBuffer;
+    return statistics;
   }
 
   private static async getByGroupCategory(timeEntryDocsByInterval: ITimeEntryDocument[]): Promise<ITimeSummaryByGroupCategory> {
