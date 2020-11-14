@@ -1,4 +1,5 @@
 import { ISummarizedTimeEntries } from '../../../../common/typescript/iSummarizedTimeEntries';
+import { IBookingDeclarationsDocument } from '../../../../common/typescript/mongoDB/iBookingDeclarationsDocument';
 import { ITasksDocument } from '../../../../common/typescript/mongoDB/iTasksDocument';
 import { ITimeEntryDocument } from '../../../../common/typescript/mongoDB/iTimeEntryDocument';
 import { ISummarizedTasks, ITaskLine } from '../../../../common/typescript/summarizedData';
@@ -11,6 +12,9 @@ import routesConfig from './../../../../common/typescript/routes.js';
 import { MonogDbOperations } from './mongoDbOperations';
 
 export class CalculateDurationsByInterval {
+  static async aggregateSummarizedTasks(input: ITimeEntryDocument[], mongoDbOperations: MonogDbOperations): Promise<ISummarizedTasks[]> {
+    return [];
+  }
   static async convertTimeSummaryToSummarizedTasks(input: ISummarizedTimeEntries[], mongoDbOperations: MonogDbOperations) {
     const output: ISummarizedTasks[] = [];
     for (let theOuterIndex = 0; theOuterIndex < input.length; theOuterIndex++) {
@@ -39,7 +43,7 @@ export class CalculateDurationsByInterval {
       for (let index = 0; index < tasks.length; index++) {
         const oneTaskToMerge = tasks[index];
         const correspondingTimeEntries: ITimeEntryDocument[] = await timeEntriesController.getTimeEntriesForTaskIds([oneTaskToMerge.taskId], App.mongoDbOperations);
-        const correspondingTimeEntryIds: string[] = correspondingTimeEntries.map(oneTimeEntry=> oneTimeEntry.timeEntryId);
+        const correspondingTimeEntryIds: string[] = correspondingTimeEntries.map(oneTimeEntry => oneTimeEntry.timeEntryId);
         const oneTaskToMergeId = oneTaskToMerge.taskId;
         const baseUrl = ''; // is being filled in client?
         const oneLine: ITaskLine = {
@@ -115,7 +119,78 @@ export class CalculateDurationsByInterval {
   }
 
   private static async getByBookingDeclaration(timeEntryDocsByInterval: ITimeEntryDocument[]) {
-    return null;
+    const outputBuffer: any[] = [];
+
+    if (!timeEntryDocsByInterval ||
+      !timeEntryDocsByInterval.length) {
+      console.error('cannot use empty time entries');
+      return;
+    }
+    const mapByBookingDeclarationId: { [bookingDeclarationId: string]: ITimeEntryDocument[] } = {};
+
+    for (const oneTimeEntry of timeEntryDocsByInterval) {
+      const bookingDeclarationId = oneTimeEntry._bookingDeclarationId;
+
+      if (!mapByBookingDeclarationId[bookingDeclarationId]) {
+        mapByBookingDeclarationId[bookingDeclarationId] = [];
+      }
+      mapByBookingDeclarationId[bookingDeclarationId].push(oneTimeEntry)
+    }
+
+    for (const _bookingDeclarationId in mapByBookingDeclarationId) {
+      if (Object.prototype.hasOwnProperty.call(mapByBookingDeclarationId, _bookingDeclarationId)) {
+        const oneBufferOfTimeEntries = mapByBookingDeclarationId[_bookingDeclarationId];
+        if (!oneBufferOfTimeEntries ||
+          !oneBufferOfTimeEntries.length) {
+          console.error('empty buffer -> continue');
+          continue;
+        }
+        let durationInMilliseconds = 0;
+        for (const oneTimeEntry of oneBufferOfTimeEntries) {
+          const oneDurationInMilliseconds = oneTimeEntry.endTime.getTime() - oneTimeEntry.startTime.getTime();
+          durationInMilliseconds += oneDurationInMilliseconds;
+        }
+
+        const bookingsPromise = timeEntriesController.getBooking(_bookingDeclarationId, App.mongoDbOperations);
+        const bookingDocs = await bookingsPromise;
+        if (!bookingDocs ||
+          !bookingDocs.length ||
+          bookingDocs.length > 1) {
+          console.error('no corresponding booking found -> continue');
+          continue;
+        }
+        const oneBookingDoc: IBookingDeclarationsDocument = bookingDocs[0];
+        const code = oneBookingDoc.code;
+        const description = oneBookingDoc.description;
+        const durationInHours = durationInMilliseconds / (1000 * 60 * 60);
+        outputBuffer.push({
+          durationInHours,
+          _bookingDeclarationId,
+          taskNumber: code,
+          taskDescription: description,
+          durationFraction: 1.00
+        });
+      }
+    }
+    // for (const oneBufferOfCorrespondingEntries of mapByBookingDeclarationId) {
+    //   console.log(oneBufferOfCorrespondingEntries);
+    // }
+
+    // const bookingsPromise = timeEntriesController.getBooking(bookingDeclarationId, App.mongoDbOperations);
+    // const bookingDocs = await bookingsPromise;
+    // if (!bookingDocs ||
+    //   !bookingDocs.length ||
+    //   bookingDocs.length > 1) {
+    //   console.error('no corresponding booking found');
+    //   return null;
+    // }
+    // const oneBookingDoc = bookingDocs[0];
+
+    // DEBUGGING:
+    // console.log(oneBookingDoc);
+    // console.log(oneTimeEntry);
+
+    return outputBuffer;
   }
 
   private static async getByGroupCategory(timeEntryDocsByInterval: ITimeEntryDocument[]): Promise<ITimeSummaryByGroupCategory> {

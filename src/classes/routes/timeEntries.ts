@@ -373,8 +373,10 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
   // DEBUGGING:
   // console.log(isBookingBased);
 
-  const groupCategory = UrlHelpers.getProperty(req.url, routesConfig.groupCategoryPropertyName);
-
+  let groupCategory = UrlHelpers.getProperty(req.url, routesConfig.groupCategoryPropertyName);
+  if (groupCategory === 'null') {
+    groupCategory = null;
+  }
   // DEBUGGING:
   // console.log(groupCategory);
 
@@ -428,7 +430,20 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
       res.send(serialized);
       // console.log('end oneSummary for:' + groupCategory);
     } else {
-      console.error('groupCategory from url is null');
+      // DEBUGGING
+      // console.log('groupCategory from url is null');
+      if (isBookingBased) {
+        // const summaryByTasksIndependentOfCategory: ISummarizedTasks[] = await CalculateDurationsByInterval.aggregateSummarizedTasks(summaries, App.mongoDbOperations);
+        // const serialized = Serialization.serialize(summaryByTasksIndependentOfCategory);
+        const serialized = Serialization.serialize(summaries);
+        res.send(serialized);
+        return;
+      } else {
+        console.error('category is null but isBookingBased:' + isBookingBased);
+        console.error('returning');
+        res.send('');
+        return;
+      }
     }
 
     // DEBUGGING:
