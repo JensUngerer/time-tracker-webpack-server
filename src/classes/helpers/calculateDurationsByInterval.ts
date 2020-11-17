@@ -151,9 +151,9 @@ export class CalculateDurationsByInterval {
         }
         let durationInMilliseconds = 0;
         for (const oneTimeEntry of oneBufferOfTimeEntries) {
-          const oneDurationInMilliseconds = oneTimeEntry.endTime.getTime() - oneTimeEntry.startTime.getTime();
-          durationInMilliseconds += oneDurationInMilliseconds;
-          overallDurationSumInMilliseconds += oneDurationInMilliseconds;
+          // const oneDurationInMilliseconds = oneTimeEntry.endTime.getTime() - oneTimeEntry.startTime.getTime();
+          durationInMilliseconds += oneTimeEntry.durationInMilliseconds;
+          overallDurationSumInMilliseconds += oneTimeEntry.durationInMilliseconds;
         }
 
         const bookingsPromise = timeEntriesController.getBooking(_bookingDeclarationId, App.mongoDbOperations);
@@ -173,7 +173,7 @@ export class CalculateDurationsByInterval {
           description: description,
           identifier: code,
           identifierUrl: '',
-          durationFraction: -1.0,
+          durationFraction: 0.0,
           durationInHours: durationInHours,
           uniqueId: _bookingDeclarationId,
           _timeEntryIds: timeEntryDocsByInterval.map(tE => tE.timeEntryId)
@@ -267,7 +267,7 @@ export class CalculateDurationsByInterval {
             categoryBufferMap[groupCategory][taskCategory] = {
               taskCategory: taskCategory,
               overallDurationSum: oneOverallSum,
-              overallDurationSumFraction: -1.0,
+              overallDurationSumFraction: 0.0,
               _timeEntryIds: oneTimeEntryIds,
               durationSumByTaskId: durationSumByTaskIdMap[taskCategory],
               durationSumFractionByTaskId: durationSumFractionByTaskIdMap[taskCategory],

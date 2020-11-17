@@ -7,12 +7,12 @@ export class TimeManagement {
         if(pause.endTime && pause.startTime) {
             const milliseconds = TimeManagement.getTimeDifferenceInMilliseconds(pause.endTime, pause.startTime);
             const minutes = TimeManagement.millisecondsInMinutes(milliseconds);
-            
+
             if (minutes === 0) {
                 // only for DEBUGGING purposes
                 return 1;
             }
-            
+
             return minutes;
         } else {
             console.error('cannot calculate time difference for pause');
@@ -22,26 +22,27 @@ export class TimeManagement {
 
     public static timeEntryToDuration(timeEntry: ITimeEntryDocument) {
         const milliseconds = TimeManagement.calculateTimeDifferenceWithoutPauses(timeEntry);
-        const minutes = TimeManagement.millisecondsInMinutes(milliseconds);
-        if (minutes === 0) {
-            // only for DEBUGGING purposes
-            return 1;
-        }
+        return milliseconds;
+        // const minutes = TimeManagement.millisecondsInMinutes(milliseconds);
+        // if (minutes === 0) {
+        //     // only for DEBUGGING purposes
+        //     return 1;
+        // }
 
-        // const minutesOfAnHour = minutes % 60;
-        // if (minutesOfAnHour < 15) {
-        //     return 0;
-        // }
-        // if (minutesOfAnHour < 30) {
-        //     return 15;
-        // }
-        // if (minutesOfAnHour < 45) {
-        //     return 30;
-        // }
-        // if (minutesOfAnHour < 60) {
-        //     return 45;
-        // }
-        return minutes;
+        // // const minutesOfAnHour = minutes % 60;
+        // // if (minutesOfAnHour < 15) {
+        // //     return 0;
+        // // }
+        // // if (minutesOfAnHour < 30) {
+        // //     return 15;
+        // // }
+        // // if (minutesOfAnHour < 45) {
+        // //     return 30;
+        // // }
+        // // if (minutesOfAnHour < 60) {
+        // //     return 45;
+        // // }
+        // return minutes;
     }
 
     public static getTimeDifferenceInMilliseconds(endTime: Date, startTime: Date): number {
@@ -54,21 +55,21 @@ export class TimeManagement {
             console.error('cannot calculate duration for:' + JSON.stringify(timeEntry, null, 4));
             return 0;
         }
-        let pausesDuration = 0;
-        timeEntry.pauses.forEach((onePause: IPause) => {
-            if (onePause.startTime && onePause.endTime) {
-                pausesDuration += TimeManagement.getTimeDifferenceInMilliseconds(onePause.endTime, onePause.startTime);
-                return;
-            }
-            if (onePause.startTime && !onePause.endTime) {
-                console.error('one pause has no endTime to startTime:' + onePause.startTime);
-                pausesDuration += TimeManagement.getTimeDifferenceInMilliseconds(new Date(), onePause.startTime);
-                return;
-            }
-            console.error('pause has neither startTime nor endTime');
-        });
-        let trackedDurationInMilliseconds = TimeManagement.getTimeDifferenceInMilliseconds(timeEntry.endTime, timeEntry.startTime);
-        trackedDurationInMilliseconds = trackedDurationInMilliseconds - pausesDuration;
+        // let pausesDuration = 0;
+        // timeEntry.pauses.forEach((onePause: IPause) => {
+        //     if (onePause.startTime && onePause.endTime) {
+        //         pausesDuration += TimeManagement.getTimeDifferenceInMilliseconds(onePause.endTime, onePause.startTime);
+        //         return;
+        //     }
+        //     if (onePause.startTime && !onePause.endTime) {
+        //         console.error('one pause has no endTime to startTime:' + onePause.startTime);
+        //         pausesDuration += TimeManagement.getTimeDifferenceInMilliseconds(new Date(), onePause.startTime);
+        //         return;
+        //     }
+        //     console.error('pause has neither startTime nor endTime');
+        // });
+        const trackedDurationInMilliseconds = TimeManagement.getTimeDifferenceInMilliseconds(timeEntry.endTime, timeEntry.startTime);
+        // trackedDurationInMilliseconds = trackedDurationInMilliseconds - pausesDuration;
 
         return trackedDurationInMilliseconds;
     }
