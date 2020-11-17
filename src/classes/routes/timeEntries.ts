@@ -132,67 +132,6 @@ const patchTimeEntriesDelete = async (req: Request, res: Response) => {
   res.send(stringifiedResponse);
 };
 
-/**
- * 2)
- * HTTP-POST /NodeJS/timeEntries + '/pause' -> a timeEntries document is updated with a new IPause object in the pauses-array
- * @param req
- * @param res
- */
-const postPauseTimeEntry = async (req: Request, res: Response) => {
-  const response = await timeEntriesController.postPause(req, App.mongoDbOperations);
-
-  const stringifiedResponse = Serialization.serialize(response);
-  res.send(stringifiedResponse);
-};
-
-/**
- * 3)
- * HTTP-PATCH /NodeJS/timeEntries + '/pause' -> the timeEntries document will be updated via a overwriting with a 'patched' pauses-array
- *
- * a) the current (single!) document is retrieved from the db
- * b) the endTime property is set in this object (of type IPause) -> and again written to the DB!?!
- * c) so the currently updated document is retrieved from the db (again!)
- * d) calculate the duration of the (last!?!) entry ?
- * e) overwrite the entire pauses array with a so 'patched' pauses array
- *
- *
- * @param req
- * @param res
- */
-const patchPauseTimeEntry = async (req: Request, res: Response) => {
-  // a)
-  const filterQuery = RequestProcessingHelpers.getFilerQuery(req);
-  const storedDocuments = await timeEntriesController.get(req, App.mongoDbOperations, filterQuery);
-
-  // DEBUGGING:
-  // console.error(JSON.stringify(storedDocuments, null, 4));
-  // console.error('the storedDocuments');
-
-  // b)
-  await timeEntriesController.patchPause(req, App.mongoDbOperations, storedDocuments);
-
-  // // DEBUGGING:
-  // console.error(JSON.stringify(response, null, 4));
-  // console.error('calling doSomething');
-
-  // c)
-  const anotherTimeTheStoredDocuments = await timeEntriesController.get(req, App.mongoDbOperations, filterQuery);
-
-  // DEBUGGING:
-  // console.error(JSON.stringify(anotherTimeTheStoredDocuments, null, 4));
-  // console.error('calling do something');
-
-  // d) and e)
-  const doSomethingResponse = await timeEntriesController.calculatePauseAndRewriteArrayToDocument(App.mongoDbOperations, filterQuery, anotherTimeTheStoredDocuments);
-
-  // DEBUGGING:
-  // console.error('doSomethingResponse');
-  // console.error(JSON.stringify(doSomethingResponse, null, 4));
-
-  const stringifiedResponse = Serialization.serialize(doSomethingResponse);
-  res.send(stringifiedResponse);
-};
-
 const getDurationStr = async (req: Request, res: Response) => {
   const theId = UrlHelpers.getIdFromUlr(req.url);
 
@@ -517,10 +456,6 @@ stopRoute.patch(asyncHandler(patchTimeEntriesStop));
 
 const deleteRoute = router.route(routesConfig.timeEntriesDeletePathSuffix);
 deleteRoute.patch(asyncHandler(patchTimeEntriesDelete));
-
-const pauseRoute = router.route(routesConfig.timeEntryPausePathSuffix);
-pauseRoute.post(asyncHandler(postPauseTimeEntry));
-pauseRoute.patch(asyncHandler(patchPauseTimeEntry));
 
 const durationRoute = router.route(routesConfig.timeEntriesDurationSuffix + '/*');
 durationRoute.get(asyncHandler(getDurationStr));

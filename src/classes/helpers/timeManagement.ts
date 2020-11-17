@@ -1,25 +1,6 @@
 import { ITimeEntryDocument } from './../../../../common/typescript/mongoDB/iTimeEntryDocument';
-import { IPause } from './../../../../common/typescript/iPause';
 
 export class TimeManagement {
-
-    public static pauseEntryToDuration(pause: IPause) {
-        if(pause.endTime && pause.startTime) {
-            const milliseconds = TimeManagement.getTimeDifferenceInMilliseconds(pause.endTime, pause.startTime);
-            const minutes = TimeManagement.millisecondsInMinutes(milliseconds);
-
-            if (minutes === 0) {
-                // only for DEBUGGING purposes
-                return 1;
-            }
-
-            return minutes;
-        } else {
-            console.error('cannot calculate time difference for pause');
-            return 0;
-        }
-    }
-
     public static timeEntryToDuration(timeEntry: ITimeEntryDocument) {
         const milliseconds = TimeManagement.calculateTimeDifferenceWithoutPauses(timeEntry);
         return milliseconds;
@@ -51,26 +32,12 @@ export class TimeManagement {
     }
 
     public static calculateTimeDifferenceWithoutPauses(timeEntry: ITimeEntryDocument): number {
-        if (!timeEntry || !timeEntry.pauses) {
+        if (!timeEntry) {
             console.error('cannot calculate duration for:' + JSON.stringify(timeEntry, null, 4));
             return 0;
         }
-        // let pausesDuration = 0;
-        // timeEntry.pauses.forEach((onePause: IPause) => {
-        //     if (onePause.startTime && onePause.endTime) {
-        //         pausesDuration += TimeManagement.getTimeDifferenceInMilliseconds(onePause.endTime, onePause.startTime);
-        //         return;
-        //     }
-        //     if (onePause.startTime && !onePause.endTime) {
-        //         console.error('one pause has no endTime to startTime:' + onePause.startTime);
-        //         pausesDuration += TimeManagement.getTimeDifferenceInMilliseconds(new Date(), onePause.startTime);
-        //         return;
-        //     }
-        //     console.error('pause has neither startTime nor endTime');
-        // });
-        const trackedDurationInMilliseconds = TimeManagement.getTimeDifferenceInMilliseconds(timeEntry.endTime, timeEntry.startTime);
-        // trackedDurationInMilliseconds = trackedDurationInMilliseconds - pausesDuration;
 
+        const trackedDurationInMilliseconds = TimeManagement.getTimeDifferenceInMilliseconds(timeEntry.endTime, timeEntry.startTime);
         return trackedDurationInMilliseconds;
     }
 

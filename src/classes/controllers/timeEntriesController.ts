@@ -1,4 +1,3 @@
-import { MongoDbLogic } from './../helpers/mongoDbLogic';
 import { RequestProcessingHelpers } from './../helpers/requestProcessingHelpers';
 import { TimeManagement } from './../helpers/timeManagement';
 import { FilterQuery } from 'mongodb';
@@ -9,7 +8,6 @@ import routesConfig from './..&../../../../../../common/typescript/routes.js';
 import { MonogDbOperations } from '../helpers/mongoDbOperations';
 import { ITimeEntryDocument } from './../../../../common/typescript/mongoDB/iTimeEntryDocument';
 import _ from 'lodash';
-import { IPause } from '../../../../common/typescript/iPause';
 import { DurationCalculator } from './../../../../common/typescript/helpers/durationCalculator';
 import { ITasksDocument } from '../../../../common/typescript/mongoDB/iTasksDocument';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
@@ -299,31 +297,6 @@ export default {
     const propertyValue = true;
 
     return mongoDbOperations.patch(propertyName, propertyValue, routesConfig.timEntriesCollectionName, theQueryObj);
-  },
-  postPause(req: Request, mongoDbOperations: MonogDbOperations): Promise<any> {
-    const theQueryObj = RequestProcessingHelpers.getFilerQuery(req);
-
-    const propertyName = routesConfig.pausesProperty;
-    const propertyValue: IPause = {
-      startTime: new Date(),
-      endTime: null,
-      duration: null,
-    };
-
-    return mongoDbOperations.patchPush(propertyName, propertyValue, routesConfig.timEntriesCollectionName, theQueryObj);
-  },
-  patchPause(req: Request, mongoDbOperations: MonogDbOperations, documents: ITimeEntryDocument[]): Promise<any> {
-    const mongoDbLogic = new MongoDbLogic(mongoDbOperations);
-
-    const theQueryObj = RequestProcessingHelpers.getFilerQuery(req);
-
-    return mongoDbLogic.patchLastTimeEntryPause(theQueryObj, documents);
-  },
-  calculatePauseAndRewriteArrayToDocument(mongoDbOperations: MonogDbOperations, filterQuery: FilterQuery<any>, documents: ITimeEntryDocument[]) {
-    const mongoDbLogic = new MongoDbLogic(mongoDbOperations);
-
-    const storeDurationsInPausesPromise = mongoDbLogic.storeDurationInPausesOfDocument(filterQuery, documents);
-    return storeDurationsInPausesPromise;
   },
   getDurationSumDays(req: Request, mongoDbOperations: MonogDbOperations, isDisabledProperty: string) {
     const theQueryObj: FilterQuery<any> = {};
