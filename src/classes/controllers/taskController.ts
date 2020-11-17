@@ -9,6 +9,12 @@ import { FilterQuery } from 'mongodb';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
 
 export default {
+    patchNewDurationSumInMilliseconds(taskId: string, newSum: number, mongoDbOperations: MonogDbOperations) {
+      const query: FilterQuery<any> = {};
+      query[routes.taskIdProperty] = taskId;
+
+      return mongoDbOperations.patch(routes.durationSumInMillisecondsPropertyName, newSum, routes.tasksCollectionName, query);
+    },
     getViaTaskId(taskId: string, mongoDbOperations: MonogDbOperations) {
         const query: FilterQuery<any> = {};
         query[routes.taskIdProperty] = taskId;
