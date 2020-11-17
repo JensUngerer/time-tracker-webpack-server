@@ -115,9 +115,9 @@ export class CalculateDurationsByInterval {
     });
   }
 
-  private static getDurationOfTimeEntry(timeEntry: ITimeEntryDocument) {
-    return timeEntry.endTime.getTime() - timeEntry.startTime.getTime();
-  }
+  // private static getDurationOfTimeEntry(timeEntry: ITimeEntryDocument) {
+  //   return timeEntry.endTime.getTime() - timeEntry.startTime.getTime();
+  // }
 
   private static async getByBookingDeclaration(timeEntryDocsByInterval: ITimeEntryDocument[]) {
     const hoursInMilliseconds = (1000 * 60 * 60);
@@ -249,18 +249,19 @@ export class CalculateDurationsByInterval {
             const oneTimeEntryIds: string[] = [];
             // const oneTaskIds: string[] = [];
             let oneOverallSum = 0.0;
-            timeEntriesOfOneCategory.forEach(oneTimeEntry => {
-              const oneDuration = this.getDurationOfTimeEntry(oneTimeEntry);
-
-              if (typeof durationSumByTaskIdMap[taskCategory][oneTimeEntry._taskId] === 'undefined') {
-                durationSumByTaskIdMap[taskCategory][oneTimeEntry._taskId] = 0;
+            // timeEntriesOfOneCategory.forEach((oneTimeEntry: ITimeEntryDocument) => {
+            for (const oneTimeEntry of timeEntriesOfOneCategory) {
+              const oneDuration = oneTimeEntry.durationInMilliseconds;
+              const taskId = oneTimeEntry._taskId;
+              const correspondingTasks: ITasksDocument[] = await taskController.getViaTaskId(taskId, App.mongoDbOperations);
+              if (!durationSumByTaskIdMap[taskCategory][taskId]) {
+                durationSumByTaskIdMap[taskCategory][taskId] = correspondingTasks[0].durationSumInMilliseconds;
               }
-              durationSumByTaskIdMap[taskCategory][oneTimeEntry._taskId] += oneDuration;
 
               oneOverallSum += oneDuration;
               oneTimeEntryIds.push(oneTimeEntry.timeEntryId);
-              // oneTaskIds.push(oneTimeEntry._taskId);
-            });
+            }
+
             if (!categoryBufferMap[groupCategory]) {
               categoryBufferMap[groupCategory] = {};
             }
@@ -279,6 +280,19 @@ export class CalculateDurationsByInterval {
 
       }
     }
+
+    // Checking values
+    // for (const category in categoryBufferMap) {
+    //   for (const taskId in durationSumByTaskIdMap[category]) {
+    //     const task = await taskController.getViaTaskId(taskId, App.mongoDbOperations);
+    //     const oneTask: ITasksDocument = task[0];
+    //     const localSum = durationSumByTaskIdMap[category][taskId];
+    //     if (oneTask.durationSumInMilliseconds !== localSum){
+    //       console.error(localSum + '!==' + oneTask.durationSumInMilliseconds);
+    //     }
+    //   }
+    // }
+
 
 
     // DEBUGGING:
