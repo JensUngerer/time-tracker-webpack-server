@@ -176,7 +176,7 @@ export class CalculateDurationsByInterval {
           durationFraction: 0.0,
           durationInHours: durationInHours,
           uniqueId: _bookingDeclarationId,
-          _timeEntryIds: timeEntryDocsByInterval.map(tE => tE.timeEntryId)
+          _timeEntryIds: timeEntryDocsByInterval.map(tE => tE.timeEntryId),
         });
       }
     }
@@ -253,10 +253,14 @@ export class CalculateDurationsByInterval {
             for (const oneTimeEntry of timeEntriesOfOneCategory) {
               const oneDuration = oneTimeEntry.durationInMilliseconds;
               const taskId = oneTimeEntry._taskId;
-              const correspondingTasks: ITasksDocument[] = await taskController.getViaTaskId(taskId, App.mongoDbOperations);
+
+              // cannot be taken at is for all days (there should be (additional) a map by day)
+              // const correspondingTasks: ITasksDocument[] = await taskController.getViaTaskId(taskId, App.mongoDbOperations);
+
               if (!durationSumByTaskIdMap[taskCategory][taskId]) {
-                durationSumByTaskIdMap[taskCategory][taskId] = correspondingTasks[0].durationSumInMilliseconds;
+                durationSumByTaskIdMap[taskCategory][taskId] = 0;
               }
+              durationSumByTaskIdMap[taskCategory][taskId] += oneDuration;
 
               oneOverallSum += oneDuration;
               oneTimeEntryIds.push(oneTimeEntry.timeEntryId);
