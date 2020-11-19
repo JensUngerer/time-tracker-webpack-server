@@ -12,11 +12,10 @@ import { DurationCalculator } from './../../../../common/typescript/helpers/dura
 import { ITasksDocument } from '../../../../common/typescript/mongoDB/iTasksDocument';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
 import { ITimeInterval } from './../../../../common/typescript/iTimeInterval';
-import taskController from './taskController';
 
 export default {
   getNonCommittedDays(mongoDbOperations: MonogDbOperations, isDisabledProperty: string) {
-    const daysByStartTime:  { [startDateTime: number]: ITimeInterval } = {};
+    const daysByStartTime: { [startDateTime: number]: ITimeInterval } = {};
     return new Promise((resolve: (value?: any) => void) => {
       const theQueryObj: FilterQuery<any> = {};
       theQueryObj[isDisabledProperty] = false;
@@ -277,23 +276,8 @@ export default {
       const theQueryObj = RequestProcessingHelpers.getFilerQuery(req);
 
       const patchPromiseForWritingTheDuration = mongoDbOperations.patch(propertyName, propertyValue, routesConfig.timEntriesCollectionName, theQueryObj);
-      patchPromiseForWritingTheDuration.then(() => {
-        const taskId = singleDoc._taskId;
-        const taskPromise = taskController.getViaTaskId(taskId, mongoDbOperations);
-        taskPromise.then((taskDocs: ITasksDocument[]) => {
-          if (!taskDocs || !taskDocs.length || taskDocs.length > 1) {
-            console.error('no or more than one task!');
-            return;
-          }
-
-          const currentDurationSum = taskDocs[0].durationSumInMilliseconds;
-          const newSum = currentDurationSum + propertyValue;
-
-          const innerPatchPromise = taskController.patchNewDurationSumInMilliseconds(taskId, newSum, mongoDbOperations);
-          innerPatchPromise.then(resolve);
-          innerPatchPromise.catch(resolve);
-        });
-      });
+      patchPromiseForWritingTheDuration.then(resolve);
+      patchPromiseForWritingTheDuration.catch(resolve);
     });
   },
   patchDeletedInClient(req: Request, mongoDbOperations: MonogDbOperations, filterQuery?: FilterQuery<any>): Promise<any> {

@@ -137,7 +137,7 @@ export class CalculateDurationsByInterval {
       if (!mapByBookingDeclarationId[bookingDeclarationId]) {
         mapByBookingDeclarationId[bookingDeclarationId] = [];
       }
-      mapByBookingDeclarationId[bookingDeclarationId].push(oneTimeEntry)
+      mapByBookingDeclarationId[bookingDeclarationId].push(oneTimeEntry);
     }
 
     let overallDurationSumInMilliseconds = 0.0;
