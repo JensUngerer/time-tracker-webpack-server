@@ -262,16 +262,23 @@ export class CalculateDurationsByInterval {
                 console.error('cannot get task to read data from:');
                 return (null as any);
               }
-              const theCorrespondingSingleTask = correspondingTasks[0];
-              const sumMapByDayGetTime = theCorrespondingSingleTask.durationSumInMillisecondsMap;
-              const theDay = oneTimeEntry.day;
+
+              // necessary: the timeEntries could be disabled by either booking or commit...
               if (!durationSumByTaskIdMap[taskCategory][taskId]) {
-                const theDayGetTime = theDay.getTime();
-                durationSumByTaskIdMap[taskCategory][taskId] = sumMapByDayGetTime[theDayGetTime];
-              } else {
-                // do nothing as the sum has already be taken
-                // console.debug(JSON.stringify(durationSumByTaskIdMap[taskCategory][taskId], null, 4));
+                durationSumByTaskIdMap[taskCategory][taskId] = 0;
               }
+              durationSumByTaskIdMap[taskCategory][taskId] += oneDuration;
+
+              // const theCorrespondingSingleTask = correspondingTasks[0];
+              // const sumMapByDayGetTime = theCorrespondingSingleTask.durationSumInMillisecondsMap;
+              // const theDay = oneTimeEntry.day;
+              // if (!durationSumByTaskIdMap[taskCategory][taskId]) {
+              //   const theDayGetTime = theDay.getTime();
+              //   durationSumByTaskIdMap[taskCategory][taskId] = sumMapByDayGetTime[theDayGetTime];
+              // } else {
+              //   // do nothing as the sum has already be taken
+              //   // console.debug(JSON.stringify(durationSumByTaskIdMap[taskCategory][taskId], null, 4));
+              // }
 
               oneOverallSum += oneDuration;
               oneTimeEntryIds.push(oneTimeEntry.timeEntryId);
