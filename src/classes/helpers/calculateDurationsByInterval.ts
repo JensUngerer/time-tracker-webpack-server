@@ -255,13 +255,13 @@ export class CalculateDurationsByInterval {
               const taskId = oneTimeEntry._taskId;
 
               // cannot be taken at is for all days (there should be (additional) a map by day)
-              const correspondingTasks: ITasksDocument[] = await taskController.getViaTaskId(taskId, App.mongoDbOperations);
-              if (!correspondingTasks ||
-                !correspondingTasks.length ||
-                correspondingTasks.length !== 1) {
-                console.error('cannot get task to read data from:');
-                return (null as any);
-              }
+              // const correspondingTasks: ITasksDocument[] = await taskController.getViaTaskId(taskId, App.mongoDbOperations);
+              // if (!correspondingTasks ||
+              //   !correspondingTasks.length ||
+              //   correspondingTasks.length !== 1) {
+              //   console.error('cannot get task to read data from:');
+              //   return (null as any);
+              // }
 
               // necessary: the timeEntries could be disabled by either booking or commit...
               if (!durationSumByTaskIdMap[taskCategory][taskId]) {
