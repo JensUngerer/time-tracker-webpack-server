@@ -266,10 +266,11 @@ export class CalculateDurationsByInterval {
               const sumMapByDayGetTime = theCorrespondingSingleTask.durationSumInMillisecondsMap;
               const theDay = oneTimeEntry.day;
               if (!durationSumByTaskIdMap[taskCategory][taskId]) {
-                durationSumByTaskIdMap[taskCategory][taskId] = sumMapByDayGetTime[theDay.getTime()];
+                const theDayGetTime = theDay.getTime();
+                durationSumByTaskIdMap[taskCategory][taskId] = sumMapByDayGetTime[theDayGetTime];
               } else {
                 // do nothing as the sum has already be taken
-                console.debug(JSON.stringify(durationSumByTaskIdMap[taskCategory][taskId], null, 4));
+                // console.debug(JSON.stringify(durationSumByTaskIdMap[taskCategory][taskId], null, 4));
               }
 
               oneOverallSum += oneDuration;
