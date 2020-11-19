@@ -207,86 +207,6 @@ const deleteByTaskId = async (req: Request, res: Response) => {
   }
 };
 
-// const getDurationSumDays = async (req: Request, res: Response) => {
-//   const helper = new CalculateDurationsByDay();
-//   const getBasis = (timeEntryDoc: ITimeEntryDocument): Promise<IBookingDeclaration | ITask> => {
-//     return new Promise<IBookingDeclaration | ITask>((resolve: (value: IBookingDeclaration) => void, reject: (value?: any) => void) => {
-//       const bookingsPromise = timeEntriesController.getBooking(timeEntryDoc._bookingDeclarationId, App.mongoDbOperations);
-//       bookingsPromise.then((bookings: IBookingDeclaration[]) => {
-
-//         if (!bookings || bookings.length !== 1) {
-//           console.error('no or more than one booking-ids found');
-//           console.error(JSON.stringify(timeEntryDoc, null, 4));
-//           console.error(JSON.stringify(bookings, null, 4));
-//           console.error('no or more than one booking-ids found');
-//           reject(null);
-//           return;
-//         }
-//         const booking = bookings[0];
-//         resolve(booking);
-//       });
-//       bookingsPromise.catch(() => {
-//         reject(null);
-//       });
-//     });
-//   };
-//   const getId = (basis: IBookingDeclaration | ITask) => {
-//     return (basis as IBookingDeclaration).bookingDeclarationId;
-//   };
-//   helper.calculate(req, res, getBasis, getId, routesConfig.isDeletedInClientProperty);
-
-//   // TODO: mark timeEntries as isDisabledInBooking = true
-// };
-
-// const getDurationSumsTasksHandler = async (req: Request, res: Response) => {
-//   /**
-//      * one entry in durationSumsTasks is for one specific day:
-//      * on one day several durations are possible (lines in the table in the UI).
-//      * So for one line (duration) the sum of (eventually several) time entries needs to be calculated.
-//      */
-//   // const durationSumsTasks: ITasksDurationSum[] =
-//   // [
-//   //     {
-//   //         day: new Date,
-//   //         durations: []
-//   //     }
-//   // ];
-//   // res.json(durationSumsTasks);
-//   const helper = new CalculateDurationsByDay();
-//   const getBasis = (timeEntryDoc: ITimeEntryDocument): Promise<IBookingDeclaration | ITask> => {
-//     return new Promise<IBookingDeclaration | ITask>((resolve: (value: ITask) => void, reject: (value?: any) => void) => {
-//       const filterQuey: FilterQuery<any> = {};
-//       filterQuey[routesConfig.taskIdProperty] = timeEntryDoc._taskId;
-//       filterQuey[routesConfig.isDisabledProperty] = false;
-//       const taskPromise = taskController.get(req, App.mongoDbOperations, filterQuey);
-//       taskPromise.then((tasks: ITask[]) => {
-//         if (!tasks || tasks.length === 0) {
-//           console.error('no tasks found for taskId:' + timeEntryDoc._taskId);
-//           reject(null);
-//           return;
-//         }
-
-//         resolve(tasks[0]);
-//       });
-//       taskPromise.catch(() => {
-//         reject(null);
-//       });
-//     });
-//   };
-//   const getId = (basis: IBookingDeclaration | ITask) => {
-//     if ((basis as IBookingDeclaration).bookingDeclarationId) {
-//       return (basis as IBookingDeclaration).bookingDeclarationId;
-//     } else if ((basis as ITask).taskId) {
-//       return (basis as ITask).taskId;
-//     }
-//     console.error('no id found for basis:' + JSON.stringify(basis, null, 4));
-//     return '';
-//   };
-//   helper.calculate(req, res, getBasis, getId, routesConfig.isDisabledInCommit);
-
-//   // TODO: mark timeEntries as isDisabledInCommit = true
-// };
-
 const getRunningTimeEntryHandler = async (req: Request, res: Response) => {
   const runningTimeEntries: ITimeEntryDocument[] = await timeEntriesController.getRunning(App.mongoDbOperations);
   if (runningTimeEntries.length === 0) {
@@ -467,17 +387,11 @@ deleteRoute.patch(asyncHandler(patchTimeEntriesDelete));
 const durationRoute = router.route(routesConfig.timeEntriesDurationSuffix + '/*');
 durationRoute.get(asyncHandler(getDurationStr));
 
-// const durationSumRoute = router.route(routesConfig.timeEntriesDurationSumSuffix);
-// durationSumRoute.get(asyncHandler(getDurationSumDays));
-
 const deleteByTaskIdRoute = router.route(routesConfig.deleteTimeEntryByTaskIdSuffix + '/*');
 deleteByTaskIdRoute.delete(asyncHandler(deleteByTaskId));
 
 const getViaTaskIdRoute = router.route(routesConfig.timeEntriesViaTaskIdSuffix + '/*');
 getViaTaskIdRoute.get(asyncHandler(getViaTaskId));
-
-// const getDurationSumsTasks = router.route(routesConfig.timeEntriesDurationSumTasksSuffix);
-// getDurationSumsTasks.get(asyncHandler(getDurationSumsTasksHandler));
 
 const getRunning = router.route(routesConfig.timeEntriesRunningSuffix);
 getRunning.get(asyncHandler(getRunningTimeEntryHandler));
