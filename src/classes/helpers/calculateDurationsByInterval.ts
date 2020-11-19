@@ -255,12 +255,22 @@ export class CalculateDurationsByInterval {
               const taskId = oneTimeEntry._taskId;
 
               // cannot be taken at is for all days (there should be (additional) a map by day)
-              // const correspondingTasks: ITasksDocument[] = await taskController.getViaTaskId(taskId, App.mongoDbOperations);
-
-              if (!durationSumByTaskIdMap[taskCategory][taskId]) {
-                durationSumByTaskIdMap[taskCategory][taskId] = 0;
+              const correspondingTasks: ITasksDocument[] = await taskController.getViaTaskId(taskId, App.mongoDbOperations);
+              if (!correspondingTasks ||
+                !correspondingTasks.length ||
+                correspondingTasks.length !== 1) {
+                console.error('cannot get task to read data from:');
+                return (null as any);
               }
-              durationSumByTaskIdMap[taskCategory][taskId] += oneDuration;
+              const theCorrespondingSingleTask = correspondingTasks[0];
+              const sumMapByDayGetTime = theCorrespondingSingleTask.durationSumInMillisecondsMap;
+              const theDay = oneTimeEntry.day;
+              if (!durationSumByTaskIdMap[taskCategory][taskId]) {
+                durationSumByTaskIdMap[taskCategory][taskId] = sumMapByDayGetTime[theDay.getTime()];
+              } else {
+                // do nothing as the sum has already be taken
+                console.debug(JSON.stringify(durationSumByTaskIdMap[taskCategory][taskId], null, 4));
+              }
 
               oneOverallSum += oneDuration;
               oneTimeEntryIds.push(oneTimeEntry.timeEntryId);
