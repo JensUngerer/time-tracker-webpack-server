@@ -3,6 +3,7 @@ import bookingDeclarationController from '../controllers/bookingDeclarationContr
 // @ts-ignore
 import routesConfig from './../../../../common/typescript/routes.js';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
+import App from '../../app';
 
 const router = express.Router();
 
