@@ -74,7 +74,7 @@ export class CalculateDurationsByInterval {
   }
 
   static async getTimeEntriesByTaskCategory(timeEntryDocsByInterval: ITimeEntryDocument[], groupCategorySelection: string | null) {
-    const timeEntriesByCategory: { [groupCategory: string]: { [category: string]: ITimeEntryDocument[] } } = {};
+    const timeEntriesByCategory: { [category: string]: ITimeEntryDocument[] } = {};
     for (const oneTimeEntryDoc of timeEntryDocsByInterval) {
       const oneTaskId = oneTimeEntryDoc._taskId;
 
@@ -86,21 +86,17 @@ export class CalculateDurationsByInterval {
         return (null as any);
       }
       const singleCorrespondingTask = correspondingTasks[0];
-      if (singleCorrespondingTask.groupCategory !== groupCategorySelection) {
-        console.log('timeEntry not correct:' + oneTimeEntryDoc.timeEntryId);
+      const groupCategory = singleCorrespondingTask.groupCategory;
+      if (groupCategory !== groupCategorySelection) {
+        console.log('skipping time entry as:' + groupCategory + '!==' + groupCategorySelection);
         return;
       }
 
       const taskCategory = singleCorrespondingTask.taskCategory;
-      const groupCategory = singleCorrespondingTask.groupCategory;
-      if (!timeEntriesByCategory[groupCategory]) {
-        timeEntriesByCategory[groupCategory] = {};
+      if (!timeEntriesByCategory[taskCategory]) {
+        timeEntriesByCategory[taskCategory] = [];
       }
-      if (!timeEntriesByCategory[groupCategory][taskCategory]) {
-        timeEntriesByCategory[groupCategory][taskCategory] = [];
-      }
-
-      timeEntriesByCategory[groupCategory][taskCategory].push(oneTimeEntryDoc);
+      timeEntriesByCategory[taskCategory].push(oneTimeEntryDoc);
     }
     return timeEntriesByCategory;
   }
@@ -204,7 +200,7 @@ export class CalculateDurationsByInterval {
   private static async getByGroupCategory(timeEntryDocsByInterval: ITimeEntryDocument[], groupCategorySelection: string | null): Promise<ITimeSummaryByGroupCategory | null> {
     const durationSumByTaskIdMap: { [category: string]: { [taskId: string]: number } } = {};
     const durationSumFractionByTaskIdMap: { [category: string]: { [taskId: string]: number } } = {};
-    const timeEntriesByCategory = await this.getTimeEntriesByTaskCategory(timeEntryDocsByInterval, groupCategorySelection);
+    const oneTimeEntryBufferByGroupCategory = await this.getTimeEntriesByTaskCategory(timeEntryDocsByInterval, groupCategorySelection);
 
     // DEBUGGING:
     // console.log(JSON.stringify(timeEntriesByCategory, null, 4));
@@ -216,85 +212,58 @@ export class CalculateDurationsByInterval {
       return null;
     }
 
-    if (Object.prototype.hasOwnProperty.call(timeEntriesByCategory, groupCategorySelection)) {
-      const oneTimeEntryBufferByGroupCategory = timeEntriesByCategory[groupCategorySelection];
-
-      // DEBUGGING:
-      // console.log(JSON.stringify(oneTimeEntryBufferByGroupCategory, null, 4));
-
-      for (const taskCategory in oneTimeEntryBufferByGroupCategory) {
-        if (!durationSumByTaskIdMap[taskCategory]) {
-          durationSumByTaskIdMap[taskCategory] = {};
-        }
-        if (!durationSumFractionByTaskIdMap[taskCategory]) {
-          durationSumFractionByTaskIdMap[taskCategory] = {};
-        }
-        if (Object.prototype.hasOwnProperty.call(oneTimeEntryBufferByGroupCategory, taskCategory)) {
-          const timeEntriesOfOneCategory: ITimeEntryDocument[] = oneTimeEntryBufferByGroupCategory[taskCategory];
-
-          // DEBUGGING:
-          // console.log(JSON.stringify(timeEntriesOfOneCategory));
-
-          const oneTimeEntryIds: string[] = [];
-          // const oneTaskIds: string[] = [];
-          let oneOverallSum = 0.0;
-          // timeEntriesOfOneCategory.forEach((oneTimeEntry: ITimeEntryDocument) => {
-          for (const oneTimeEntry of timeEntriesOfOneCategory) {
-            const oneDuration = oneTimeEntry.durationInMilliseconds;
-            const taskId = oneTimeEntry._taskId;
-
-            // necessary: the timeEntries could be disabled by either booking or commit...
-            if (!durationSumByTaskIdMap[taskCategory][taskId]) {
-              durationSumByTaskIdMap[taskCategory][taskId] = 0;
-            }
-            durationSumByTaskIdMap[taskCategory][taskId] += oneDuration;
-
-            // const theCorrespondingSingleTask = correspondingTasks[0];
-            // const sumMapByDayGetTime = theCorrespondingSingleTask.durationSumInMillisecondsMap;
-            // const theDay = oneTimeEntry.day;
-            // if (!durationSumByTaskIdMap[taskCategory][taskId]) {
-            //   const theDayGetTime = theDay.getTime();
-            //   durationSumByTaskIdMap[taskCategory][taskId] = sumMapByDayGetTime[theDayGetTime];
-            // } else {
-            //   // do nothing as the sum has already be taken
-            //   // console.debug(JSON.stringify(durationSumByTaskIdMap[taskCategory][taskId], null, 4));
-            // }
-
-            oneOverallSum += oneDuration;
-            oneTimeEntryIds.push(oneTimeEntry.timeEntryId);
-          }
-
-          if (!categoryBufferMap[groupCategorySelection]) {
-            categoryBufferMap[groupCategorySelection] = {};
-          }
-          categoryBufferMap[groupCategorySelection][taskCategory] = {
-            taskCategory: taskCategory,
-            overallDurationSum: oneOverallSum,
-            overallDurationSumFraction: 0.0,
-            _timeEntryIds: oneTimeEntryIds,
-            durationSumByTaskId: durationSumByTaskIdMap[taskCategory],
-            durationSumFractionByTaskId: durationSumFractionByTaskIdMap[taskCategory],
-            // taskIds: oneTaskIds
-          };
-          durationSumOverAllCategories += oneOverallSum;
-        }
-      }
-    }
-
-    // Checking values
-    // for (const category in categoryBufferMap) {
-    //   for (const taskId in durationSumByTaskIdMap[category]) {
-    //     const task = await taskController.getViaTaskId(taskId, App.mongoDbOperations);
-    //     const oneTask: ITasksDocument = task[0];
-    //     const localSum = durationSumByTaskIdMap[category][taskId];
-    //     if (oneTask.durationSumInMilliseconds !== localSum){
-    //       console.error(localSum + '!==' + oneTask.durationSumInMilliseconds);
-    //     }
-    //   }
-    // }
+    // if (Object.prototype.hasOwnProperty.call(timeEntriesByCategory, groupCategorySelection)) {
+    //   const oneTimeEntryBufferByGroupCategory = timeEntriesByCategory[groupCategorySelection];
 
     // DEBUGGING:
-    // console.log(JSON.stringify(categoryBufferMap, null, 4));
+    // console.log(JSON.stringify(oneTimeEntryBufferByGroupCategory, null, 4));
+
+    for (const taskCategory in oneTimeEntryBufferByGroupCategory) {
+      if (!durationSumByTaskIdMap[taskCategory]) {
+        durationSumByTaskIdMap[taskCategory] = {};
+      }
+      if (!durationSumFractionByTaskIdMap[taskCategory]) {
+        durationSumFractionByTaskIdMap[taskCategory] = {};
+      }
+      if (Object.prototype.hasOwnProperty.call(oneTimeEntryBufferByGroupCategory, taskCategory)) {
+        const timeEntriesOfOneCategory: ITimeEntryDocument[] = oneTimeEntryBufferByGroupCategory[taskCategory];
+
+        // DEBUGGING:
+        // console.log(JSON.stringify(timeEntriesOfOneCategory));
+
+        const oneTimeEntryIds: string[] = [];
+        // const oneTaskIds: string[] = [];
+        let oneOverallSum = 0.0;
+        // timeEntriesOfOneCategory.forEach((oneTimeEntry: ITimeEntryDocument) => {
+        for (const oneTimeEntry of timeEntriesOfOneCategory) {
+          const oneDuration = oneTimeEntry.durationInMilliseconds;
+          const taskId = oneTimeEntry._taskId;
+
+          // necessary: the timeEntries could be disabled by either booking or commit...
+          if (!durationSumByTaskIdMap[taskCategory][taskId]) {
+            durationSumByTaskIdMap[taskCategory][taskId] = 0;
+          }
+          durationSumByTaskIdMap[taskCategory][taskId] += oneDuration;
+
+          oneOverallSum += oneDuration;
+          oneTimeEntryIds.push(oneTimeEntry.timeEntryId);
+        }
+
+        if (!categoryBufferMap[groupCategorySelection]) {
+          categoryBufferMap[groupCategorySelection] = {};
+        }
+        categoryBufferMap[groupCategorySelection][taskCategory] = {
+          taskCategory: taskCategory,
+          overallDurationSum: oneOverallSum,
+          overallDurationSumFraction: 0.0,
+          _timeEntryIds: oneTimeEntryIds,
+          durationSumByTaskId: durationSumByTaskIdMap[taskCategory],
+          durationSumFractionByTaskId: durationSumFractionByTaskIdMap[taskCategory],
+          // taskIds: oneTaskIds
+        };
+        durationSumOverAllCategories += oneOverallSum;
+      }
+    }
 
     for (const taskCategory in durationSumByTaskIdMap) {
       if (Object.prototype.hasOwnProperty.call(durationSumByTaskIdMap, taskCategory)) {
