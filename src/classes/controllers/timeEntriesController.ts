@@ -82,7 +82,7 @@ export default {
     //     // }
     // };
     theQueryObj[routesConfig.endDateProperty] = {
-      '$lte': endTimeUtc,
+      '$lt': endTimeUtc,
     };
     if (typeof isDisabledPropertyName !== 'undefined'
       && typeof isDisabledPropertyValue !== 'undefined') {
