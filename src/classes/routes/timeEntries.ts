@@ -239,6 +239,9 @@ const getViaIdHandler = async (req: Request, res: Response) => {
 };
 
 const getStatisticsHandler = async (req: Request, res: Response) => {
+  // DEBUGGING:
+  console.error('req.url:' + req.url);
+
   const isRawBookingBased = UrlHelpers.getProperty(req.url, routesConfig.isBookingBasedPropertyName);
   const isBookingBased = JSON.parse(isRawBookingBased as string);
   const isTakenCareIsDisabledRaw = UrlHelpers.getProperty(req.url, routesConfig.isTakenCareIsDisabledPropertyName);
