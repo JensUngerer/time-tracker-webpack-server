@@ -73,51 +73,37 @@ export class CalculateDurationsByInterval {
     return output;
   }
 
-  static async getTimeEntriesByTaskCategory(timeEntryDocsByInterval: ITimeEntryDocument[]) {
-    return new Promise<{ [groupCategory: string]: { [category: string]: ITimeEntryDocument[] } }>((resolve: (value?: { [groupCategory: string]: { [category: string]: ITimeEntryDocument[] } }) => void) => {
-      const timeEntriesByCategory: { [groupCategory: string]: { [category: string]: ITimeEntryDocument[] } } = {};
+  static async getTimeEntriesByTaskCategory(timeEntryDocsByInterval: ITimeEntryDocument[], groupCategorySelection: string | null) {
+    const timeEntriesByCategory: { [groupCategory: string]: { [category: string]: ITimeEntryDocument[] } } = {};
+    for (const oneTimeEntryDoc of timeEntryDocsByInterval) {
+      const oneTaskId = oneTimeEntryDoc._taskId;
 
-      let indexInTimeEntries = 0;
-      const loop = async () => {
-        if (indexInTimeEntries >= timeEntryDocsByInterval.length) {
-          resolve(timeEntriesByCategory);
-          // end of loop
-          return;
-        }
+      const correspondingTasks: ITasksDocument[] = await taskController.getViaTaskId(oneTaskId, App.mongoDbOperations);
+      if (!correspondingTasks ||
+        !correspondingTasks.length ||
+        correspondingTasks.length !== 1) {
+        console.error('cannot get task to read data from:');
+        return (null as any);
+      }
+      const singleCorrespondingTask = correspondingTasks[0];
+      if (singleCorrespondingTask.groupCategory !== groupCategorySelection) {
+        console.log('timeEntry not correct:' + oneTimeEntryDoc.timeEntryId);
+        return;
+      }
 
-        // loop body (in every iteration)
-        const oneTimeEntryDoc: ITimeEntryDocument = timeEntryDocsByInterval[indexInTimeEntries];
-        const oneTaskId = oneTimeEntryDoc._taskId;
-        try {
-          // const groupCategory = await timeEntriesController.getGroupCategoryForTaskId(App.mongoDbOperations, oneTaskId);
-          const taskCategory = await timeEntriesController.getCategoryForTaskId(App.mongoDbOperations, oneTaskId, routesConfig.taskCategoryPropertyName);
-          const groupCategory = await timeEntriesController.getCategoryForTaskId(App.mongoDbOperations, oneTaskId, routesConfig.groupCategoryPropertyName);
-          if (!timeEntriesByCategory[groupCategory]) {
-            timeEntriesByCategory[groupCategory] = {};
-          }
-          if (!timeEntriesByCategory[groupCategory][taskCategory]) {
-            timeEntriesByCategory[groupCategory][taskCategory] = [];
-          }
-          timeEntriesByCategory[groupCategory][taskCategory].push(oneTimeEntryDoc);
-          // next iteration in loop
-          indexInTimeEntries++;
-          loop();
-        } catch (e) {
-          console.error('getTimeEntriesByTaskCategory threw an error:');
-          console.error(e);
-          // next iteration in loop
-          indexInTimeEntries++;
-          loop();
-        }
-      };
-      // initial call
-      loop();
-    });
+      const taskCategory = singleCorrespondingTask.taskCategory;
+      const groupCategory = singleCorrespondingTask.groupCategory;
+      if (!timeEntriesByCategory[groupCategory]) {
+        timeEntriesByCategory[groupCategory] = {};
+      }
+      if (!timeEntriesByCategory[groupCategory][taskCategory]) {
+        timeEntriesByCategory[groupCategory][taskCategory] = [];
+      }
+
+      timeEntriesByCategory[groupCategory][taskCategory].push(oneTimeEntryDoc);
+    }
+    return timeEntriesByCategory;
   }
-
-  // private static getDurationOfTimeEntry(timeEntry: ITimeEntryDocument) {
-  //   return timeEntry.endTime.getTime() - timeEntry.startTime.getTime();
-  // }
 
   private static async getByBookingDeclaration(timeEntryDocsByInterval: ITimeEntryDocument[]) {
     const hoursInMilliseconds = (1000 * 60 * 60);
@@ -218,7 +204,7 @@ export class CalculateDurationsByInterval {
   private static async getByGroupCategory(timeEntryDocsByInterval: ITimeEntryDocument[], groupCategorySelection: string | null): Promise<ITimeSummaryByGroupCategory | null> {
     const durationSumByTaskIdMap: { [category: string]: { [taskId: string]: number } } = {};
     const durationSumFractionByTaskIdMap: { [category: string]: { [taskId: string]: number } } = {};
-    const timeEntriesByCategory = await this.getTimeEntriesByTaskCategory(timeEntryDocsByInterval);
+    const timeEntriesByCategory = await this.getTimeEntriesByTaskCategory(timeEntryDocsByInterval, groupCategorySelection);
 
     // DEBUGGING:
     // console.log(JSON.stringify(timeEntriesByCategory, null, 4));
@@ -256,15 +242,6 @@ export class CalculateDurationsByInterval {
           for (const oneTimeEntry of timeEntriesOfOneCategory) {
             const oneDuration = oneTimeEntry.durationInMilliseconds;
             const taskId = oneTimeEntry._taskId;
-
-            // cannot be taken at is for all days (there should be (additional) a map by day)
-            // const correspondingTasks: ITasksDocument[] = await taskController.getViaTaskId(taskId, App.mongoDbOperations);
-            // if (!correspondingTasks ||
-            //   !correspondingTasks.length ||
-            //   correspondingTasks.length !== 1) {
-            //   console.error('cannot get task to read data from:');
-            //   return (null as any);
-            // }
 
             // necessary: the timeEntries could be disabled by either booking or commit...
             if (!durationSumByTaskIdMap[taskCategory][taskId]) {
