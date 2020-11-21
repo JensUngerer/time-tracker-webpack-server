@@ -215,7 +215,7 @@ export class CalculateDurationsByInterval {
     return statistics;
   }
 
-  private static async getByGroupCategory(timeEntryDocsByInterval: ITimeEntryDocument[]): Promise<ITimeSummaryByGroupCategory> {
+  private static async getByGroupCategory(timeEntryDocsByInterval: ITimeEntryDocument[], groupCategorySelection: string | null): Promise<ITimeSummaryByGroupCategory | null> {
     const durationSumByTaskIdMap: { [category: string]: { [taskId: string]: number } } = {};
     const durationSumFractionByTaskIdMap: { [category: string]: { [taskId: string]: number } } = {};
     const timeEntriesByCategory = await this.getTimeEntriesByTaskCategory(timeEntryDocsByInterval);
@@ -225,81 +225,82 @@ export class CalculateDurationsByInterval {
 
     let durationSumOverAllCategories = 0.0;
     const categoryBufferMap: ITimeSummaryByGroupCategory = {};
+    if (!groupCategorySelection) {
+      console.error('cannot get time entries by group category as groupCategory:' + groupCategorySelection);
+      return null;
+    }
 
-    for (const groupCategory in timeEntriesByCategory) {
-      if (Object.prototype.hasOwnProperty.call(timeEntriesByCategory, groupCategory)) {
-        const oneTimeEntryBufferByGroupCategory = timeEntriesByCategory[groupCategory];
+    if (Object.prototype.hasOwnProperty.call(timeEntriesByCategory, groupCategorySelection)) {
+      const oneTimeEntryBufferByGroupCategory = timeEntriesByCategory[groupCategorySelection];
 
-        // DEBUGGING:
-        // console.log(JSON.stringify(oneTimeEntryBufferByGroupCategory, null, 4));
+      // DEBUGGING:
+      // console.log(JSON.stringify(oneTimeEntryBufferByGroupCategory, null, 4));
 
-        for (const taskCategory in oneTimeEntryBufferByGroupCategory) {
-          if (!durationSumByTaskIdMap[taskCategory]) {
-            durationSumByTaskIdMap[taskCategory] = {};
-          }
-          if (!durationSumFractionByTaskIdMap[taskCategory]) {
-            durationSumFractionByTaskIdMap[taskCategory] = {};
-          }
-          if (Object.prototype.hasOwnProperty.call(oneTimeEntryBufferByGroupCategory, taskCategory)) {
-            const timeEntriesOfOneCategory: ITimeEntryDocument[] = oneTimeEntryBufferByGroupCategory[taskCategory];
-
-            // DEBUGGING:
-            // console.log(JSON.stringify(timeEntriesOfOneCategory));
-
-            const oneTimeEntryIds: string[] = [];
-            // const oneTaskIds: string[] = [];
-            let oneOverallSum = 0.0;
-            // timeEntriesOfOneCategory.forEach((oneTimeEntry: ITimeEntryDocument) => {
-            for (const oneTimeEntry of timeEntriesOfOneCategory) {
-              const oneDuration = oneTimeEntry.durationInMilliseconds;
-              const taskId = oneTimeEntry._taskId;
-
-              // cannot be taken at is for all days (there should be (additional) a map by day)
-              // const correspondingTasks: ITasksDocument[] = await taskController.getViaTaskId(taskId, App.mongoDbOperations);
-              // if (!correspondingTasks ||
-              //   !correspondingTasks.length ||
-              //   correspondingTasks.length !== 1) {
-              //   console.error('cannot get task to read data from:');
-              //   return (null as any);
-              // }
-
-              // necessary: the timeEntries could be disabled by either booking or commit...
-              if (!durationSumByTaskIdMap[taskCategory][taskId]) {
-                durationSumByTaskIdMap[taskCategory][taskId] = 0;
-              }
-              durationSumByTaskIdMap[taskCategory][taskId] += oneDuration;
-
-              // const theCorrespondingSingleTask = correspondingTasks[0];
-              // const sumMapByDayGetTime = theCorrespondingSingleTask.durationSumInMillisecondsMap;
-              // const theDay = oneTimeEntry.day;
-              // if (!durationSumByTaskIdMap[taskCategory][taskId]) {
-              //   const theDayGetTime = theDay.getTime();
-              //   durationSumByTaskIdMap[taskCategory][taskId] = sumMapByDayGetTime[theDayGetTime];
-              // } else {
-              //   // do nothing as the sum has already be taken
-              //   // console.debug(JSON.stringify(durationSumByTaskIdMap[taskCategory][taskId], null, 4));
-              // }
-
-              oneOverallSum += oneDuration;
-              oneTimeEntryIds.push(oneTimeEntry.timeEntryId);
-            }
-
-            if (!categoryBufferMap[groupCategory]) {
-              categoryBufferMap[groupCategory] = {};
-            }
-            categoryBufferMap[groupCategory][taskCategory] = {
-              taskCategory: taskCategory,
-              overallDurationSum: oneOverallSum,
-              overallDurationSumFraction: 0.0,
-              _timeEntryIds: oneTimeEntryIds,
-              durationSumByTaskId: durationSumByTaskIdMap[taskCategory],
-              durationSumFractionByTaskId: durationSumFractionByTaskIdMap[taskCategory],
-              // taskIds: oneTaskIds
-            };
-            durationSumOverAllCategories += oneOverallSum;
-          }
+      for (const taskCategory in oneTimeEntryBufferByGroupCategory) {
+        if (!durationSumByTaskIdMap[taskCategory]) {
+          durationSumByTaskIdMap[taskCategory] = {};
         }
+        if (!durationSumFractionByTaskIdMap[taskCategory]) {
+          durationSumFractionByTaskIdMap[taskCategory] = {};
+        }
+        if (Object.prototype.hasOwnProperty.call(oneTimeEntryBufferByGroupCategory, taskCategory)) {
+          const timeEntriesOfOneCategory: ITimeEntryDocument[] = oneTimeEntryBufferByGroupCategory[taskCategory];
 
+          // DEBUGGING:
+          // console.log(JSON.stringify(timeEntriesOfOneCategory));
+
+          const oneTimeEntryIds: string[] = [];
+          // const oneTaskIds: string[] = [];
+          let oneOverallSum = 0.0;
+          // timeEntriesOfOneCategory.forEach((oneTimeEntry: ITimeEntryDocument) => {
+          for (const oneTimeEntry of timeEntriesOfOneCategory) {
+            const oneDuration = oneTimeEntry.durationInMilliseconds;
+            const taskId = oneTimeEntry._taskId;
+
+            // cannot be taken at is for all days (there should be (additional) a map by day)
+            // const correspondingTasks: ITasksDocument[] = await taskController.getViaTaskId(taskId, App.mongoDbOperations);
+            // if (!correspondingTasks ||
+            //   !correspondingTasks.length ||
+            //   correspondingTasks.length !== 1) {
+            //   console.error('cannot get task to read data from:');
+            //   return (null as any);
+            // }
+
+            // necessary: the timeEntries could be disabled by either booking or commit...
+            if (!durationSumByTaskIdMap[taskCategory][taskId]) {
+              durationSumByTaskIdMap[taskCategory][taskId] = 0;
+            }
+            durationSumByTaskIdMap[taskCategory][taskId] += oneDuration;
+
+            // const theCorrespondingSingleTask = correspondingTasks[0];
+            // const sumMapByDayGetTime = theCorrespondingSingleTask.durationSumInMillisecondsMap;
+            // const theDay = oneTimeEntry.day;
+            // if (!durationSumByTaskIdMap[taskCategory][taskId]) {
+            //   const theDayGetTime = theDay.getTime();
+            //   durationSumByTaskIdMap[taskCategory][taskId] = sumMapByDayGetTime[theDayGetTime];
+            // } else {
+            //   // do nothing as the sum has already be taken
+            //   // console.debug(JSON.stringify(durationSumByTaskIdMap[taskCategory][taskId], null, 4));
+            // }
+
+            oneOverallSum += oneDuration;
+            oneTimeEntryIds.push(oneTimeEntry.timeEntryId);
+          }
+
+          if (!categoryBufferMap[groupCategorySelection]) {
+            categoryBufferMap[groupCategorySelection] = {};
+          }
+          categoryBufferMap[groupCategorySelection][taskCategory] = {
+            taskCategory: taskCategory,
+            overallDurationSum: oneOverallSum,
+            overallDurationSumFraction: 0.0,
+            _timeEntryIds: oneTimeEntryIds,
+            durationSumByTaskId: durationSumByTaskIdMap[taskCategory],
+            durationSumFractionByTaskId: durationSumFractionByTaskIdMap[taskCategory],
+            // taskIds: oneTaskIds
+          };
+          durationSumOverAllCategories += oneOverallSum;
+        }
       }
     }
 
@@ -314,8 +315,6 @@ export class CalculateDurationsByInterval {
     //     }
     //   }
     // }
-
-
 
     // DEBUGGING:
     // console.log(JSON.stringify(categoryBufferMap, null, 4));
@@ -360,7 +359,7 @@ export class CalculateDurationsByInterval {
     return categoryBufferMap;
   }
 
-  static async calculate(startTime: Date, endTime: Date, isBookingBased: boolean, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean) {
+  static async calculate(startTime: Date, endTime: Date, isBookingBased: boolean, groupCategory: string | null, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean) {
     try {
       // DEBUGGING:
       // console.log(startTime.toUTCString());
@@ -372,7 +371,7 @@ export class CalculateDurationsByInterval {
         return null;
       }
       if (!isBookingBased) {
-        return CalculateDurationsByInterval.getByGroupCategory(timeEntryDocsByInterval);
+        return CalculateDurationsByInterval.getByGroupCategory(timeEntryDocsByInterval, groupCategory);
       } else {
         return CalculateDurationsByInterval.getByBookingDeclaration(timeEntryDocsByInterval);
       }

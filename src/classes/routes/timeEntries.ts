@@ -275,12 +275,12 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     // console.log('summeries begin');
     let summaries;
     if (!isTakenCareIsDisabled) {
-      summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased);
+      summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory);
     } else {
       if (isBookingBased) {
-        summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, routesConfig.isDeletedInClientProperty, false);
+        summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDeletedInClientProperty, false);
       } else {
-        summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, routesConfig.isDisabledInCommit, false);
+        summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDisabledInCommit, false);
       }
     }
     if (!summaries) {
