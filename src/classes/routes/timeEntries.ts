@@ -283,17 +283,17 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     // const returnValueByCategoryMap: { [category: string]: any[]} = {};
 
     // console.log('summeries begin');
-    let summaries;
+    let oneSummary: ITimeSummary;
     if (!isTakenCareIsDisabled) {
-      summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory);
+      oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory);
     } else {
       if (isBookingBased) {
-        summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDeletedInClientProperty, false);
+        oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDeletedInClientProperty, false);
       } else {
-        summaries = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDisabledInCommit, false);
+        oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDisabledInCommit, false);
       }
     }
-    if (!summaries) {
+    if (!oneSummary) {
       // console.error('no summaries');
       res.send('');
       return;
@@ -307,9 +307,6 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     //   }
     // }
     if (groupCategory !== null) {
-      // console.log('begin oneSummary for:' + groupCategory);
-      // console.log(JSON.stringify(summaries, null, 4));
-      const oneSummary: ITimeSummary = summaries[groupCategory];
       if (!oneSummary) {
         console.error('there is no summary for:' + groupCategory);
         res.send('');
@@ -327,7 +324,7 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
       if (isBookingBased) {
         // const summaryByTasksIndependentOfCategory: ISummarizedTasks[] = await CalculateDurationsByInterval.aggregateSummarizedTasks(summaries, App.mongoDbOperations);
         // const serialized = Serialization.serialize(summaryByTasksIndependentOfCategory);
-        const serialized = Serialization.serialize(summaries);
+        const serialized = Serialization.serialize(oneSummary);
         res.send(serialized);
         return;
       } else {
