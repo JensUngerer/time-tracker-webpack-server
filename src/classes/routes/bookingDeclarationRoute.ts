@@ -1,6 +1,4 @@
 import express, { Request, Response } from 'express';
-import asyncHandler from 'express-async-handler';
-import { App } from '../../app';
 import bookingDeclarationController from '../controllers/bookingDeclarationController';
 // @ts-ignore
 import routesConfig from './../../../../common/typescript/routes.js';
@@ -29,13 +27,13 @@ const getViaId = async (req: Request, res: Response) => {
     res.send(stringifiedResponse);
 };
 const rootRoute = router.route('/');
-rootRoute.post(asyncHandler(postBookingDeclaration));
+rootRoute.post(postBookingDeclaration);
 
 const getViaProjectIdRoute = router.route(routesConfig.bookingDeclarationsByProjectIdSuffix + '/*');
-getViaProjectIdRoute.get(asyncHandler(getViaProjectId));
+getViaProjectIdRoute.get(getViaProjectId);
 
 const getViaIdRoute = router.route('/*');
-getViaIdRoute.get(asyncHandler(getViaId));
+getViaIdRoute.get(getViaId);
 
 // DEBUGGING:
 // console.log(getViaProjectIdRoute.path);

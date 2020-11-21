@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import asyncHandler from 'express-async-handler';
 import { FilterQuery } from 'mongodb';
 
 import { ITimeEntryDocument } from '../../../../common/typescript/mongoDB/iTimeEntryDocument';
@@ -378,34 +377,34 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
 };
 
 const rootRoute = router.route('/');
-rootRoute.get(asyncHandler(getTimeEntries));
-rootRoute.post(asyncHandler(postTimeEntries));
+rootRoute.get(getTimeEntries);
+rootRoute.post(postTimeEntries);
 
 const stopRoute = router.route(routesConfig.timeEntriesStopPathSuffix);
-stopRoute.patch(asyncHandler(patchTimeEntriesStop));
+stopRoute.patch(patchTimeEntriesStop);
 
 const deleteRoute = router.route(routesConfig.timeEntriesDeletePathSuffix);
-deleteRoute.patch(asyncHandler(patchTimeEntriesDelete));
+deleteRoute.patch(patchTimeEntriesDelete);
 
 const durationRoute = router.route(routesConfig.timeEntriesDurationSuffix + '/*');
-durationRoute.get(asyncHandler(getDurationStr));
+durationRoute.get(getDurationStr);
 
 const deleteByTaskIdRoute = router.route(routesConfig.deleteTimeEntryByTaskIdSuffix + '/*');
-deleteByTaskIdRoute.delete(asyncHandler(deleteByTaskId));
+deleteByTaskIdRoute.delete(deleteByTaskId);
 
 const getViaTaskIdRoute = router.route(routesConfig.timeEntriesViaTaskIdSuffix + '/*');
-getViaTaskIdRoute.get(asyncHandler(getViaTaskId));
+getViaTaskIdRoute.get(getViaTaskId);
 
 const getRunning = router.route(routesConfig.timeEntriesRunningSuffix);
-getRunning.get(asyncHandler(getRunningTimeEntryHandler));
+getRunning.get(getRunningTimeEntryHandler);
 
 const getStatistics = router.route(routesConfig.timeEntriesStatisticsSufffix + '/*');
-getStatistics.get(asyncHandler(getStatisticsHandler));
+getStatistics.get(getStatisticsHandler);
 
 const getNonCommittedDays = router.route(routesConfig.nonCommittedDaysSuffix);
-getNonCommittedDays.get(asyncHandler(getNonCommittedDaysHandler));
+getNonCommittedDays.get(getNonCommittedDaysHandler);
 
 const getViaId = router.route('/*');
-getViaId.get(asyncHandler(getViaIdHandler));
+getViaId.get(getViaIdHandler);
 
 export default router;

@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import asyncHandler from 'express-async-handler';
 import projectController from './../controllers/projectController';
 import { App } from '../../app';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
@@ -35,10 +34,10 @@ const getByTaskIdHandler = async (req: Request, res: Response) => {
 };
 
 const rootRoute = router.route('/');
-rootRoute.post(asyncHandler(postProject));
-rootRoute.get(asyncHandler(getProject));
-rootRoute.patch(asyncHandler(patchProject));
+rootRoute.post(postProject);
+rootRoute.get(getProject);
+rootRoute.patch(patchProject);
 
 const byTaskIdRoute = router.route(routesConfig.projectByTaskIdSuffix + '/*');
-byTaskIdRoute.get(asyncHandler(getByTaskIdHandler));
+byTaskIdRoute.get(getByTaskIdHandler);
 export default router;

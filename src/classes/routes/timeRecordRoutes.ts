@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import asyncHandler from 'express-async-handler';
 import timeRecordController from '../controllers/timeRecordController'; // cont
 import { App } from '../../app';
 // @ts-ignore
@@ -35,6 +34,6 @@ const postTimeRecord = async (req: Request, res: Response) => {
     res.json(markAsDeletedResult);
 };
 
-router.route('/').post(asyncHandler(postTimeRecord));
+router.route('/').post(postTimeRecord);
 
 export default router;

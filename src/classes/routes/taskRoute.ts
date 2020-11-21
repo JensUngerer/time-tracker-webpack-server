@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import asyncHandler from 'express-async-handler';
 import taskController from './../controllers/taskController';
 import { App } from '../../app';
 import { UrlHelpers } from '../helpers/urlHelpers';
@@ -55,14 +54,14 @@ const getViaTaskId = async (req: Request, res: Response) => {
 };
 
 const rootRoute = router.route('/');
-rootRoute.post(asyncHandler(postTask));
-rootRoute.get(asyncHandler(getTask));
-rootRoute.patch(asyncHandler(patchTask));
+rootRoute.post(postTask);
+rootRoute.get(getTask);
+rootRoute.patch(patchTask);
 
 const idRoute = router.route(routesConfig.taskIdSuffix + '/*');
-idRoute.get(asyncHandler(getViaTaskId));
+idRoute.get(getViaTaskId);
 
 const rootRouteWithId = router.route('/*');
-rootRouteWithId.get(asyncHandler(getTaskViaProjectId));
+rootRouteWithId.get(getTaskViaProjectId);
 
 export default router;
