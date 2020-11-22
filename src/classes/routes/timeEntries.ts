@@ -13,6 +13,7 @@ import { CalculateDurationsByInterval } from '../helpers/calculateDurationsByInt
 import { ITimeSummary } from '../../../../common/typescript/iTimeSummary';
 import { ISummarizedTasks } from './../../../../common/typescript/summarizedData';
 import taskController from '../controllers/taskController';
+import { IContextLine } from './../../../../common/typescript/iContextLine';
 
 const router = express.Router();
 
@@ -254,7 +255,8 @@ const getTimeInterval = async (req: Request, res: Response)  => {
     res.send([]);
     return;
   }
-  const serialized = Serialization.serialize(timeEntryDocsByInterval);
+  const contextLines: IContextLine[] = await taskController.generateContextLinesFrom(timeEntryDocsByInterval, App.mongoDbOperations);
+  const serialized = Serialization.serialize(contextLines);
   res.send(serialized);
 };
 

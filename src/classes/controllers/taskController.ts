@@ -8,8 +8,35 @@ import _ from 'lodash';
 import { FilterQuery } from 'mongodb';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
 import { ITimeEntryDocument } from '../../../../common/typescript/mongoDB/iTimeEntryDocument';
+import { IContextLine } from '../../../../common/typescript/iContextLine';
+import { DurationFormatter } from './../../../../common/typescript/helpers/durationFormatter';
 
 export default {
+  async generateContextLinesFrom(timeEntryDocs: ITimeEntryDocument[], mongoDbOperations: MonogDbOperations): Promise<IContextLine[]> {
+    const contextLines: IContextLine[] = [];
+    if (!timeEntryDocs || !timeEntryDocs.length) {
+      return [];
+    }
+
+    for (const oneTimeEntryDoc of timeEntryDocs) {
+      const taskId = oneTimeEntryDoc._taskId;
+      const correspondingTasks: ITasksDocument[] = await this.getViaTaskId(taskId, mongoDbOperations);
+      if (!correspondingTasks || !correspondingTasks.length) {
+        console.error('no corresponding task for:' + taskId);
+        continue;
+      }
+      const oneCorrespondingTask: ITasksDocument = correspondingTasks[0];
+      contextLines.push({
+        duration: DurationFormatter.convertToDuration(oneTimeEntryDoc.durationInMilliseconds),
+        startTime: oneTimeEntryDoc.startTime,
+        taskName: oneCorrespondingTask.name,
+        taskId: oneTimeEntryDoc._taskId,
+        taskNumber: oneCorrespondingTask.number,
+      });
+    }
+
+    return contextLines;
+  },
   patchDurationSumMap(singleDoc: ITimeEntryDocument, mongoDbOperations: MonogDbOperations) {
     // patchPromiseForWritingTheDuration.then(() => {
     const taskId = singleDoc._taskId;
