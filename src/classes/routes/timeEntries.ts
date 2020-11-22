@@ -237,6 +237,27 @@ const getViaIdHandler = async (req: Request, res: Response) => {
   res.send(stringifiedResponse);
 };
 
+const getTimeInterval = async (req: Request, res: Response)  => {
+  // DEBUGGING:
+  // console.log('getTimeInterval');
+
+  const startTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.startTimeProperty);
+  const endTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.endDateProperty);
+  if (!startTimeUtc || !endTimeUtc) {
+    console.error('not utc - start- or end-time');
+    res.send('');
+    return;
+  }
+  const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTimeUtc, endTimeUtc);
+  if (!timeEntryDocsByInterval || !timeEntryDocsByInterval.length) {
+    console.error('no time entries found');
+    res.send([]);
+    return;
+  }
+  const serialized = Serialization.serialize(timeEntryDocsByInterval);
+  res.send(serialized);
+};
+
 const getStatisticsHandler = async (req: Request, res: Response) => {
   const isRawBookingBased = UrlHelpers.getProperty(req.url, routesConfig.isBookingBasedPropertyName);
   const isBookingBased = JSON.parse(isRawBookingBased as string);
@@ -329,6 +350,9 @@ deleteRoute.patch(patchTimeEntriesDelete);
 const durationRoute = router.route(routesConfig.timeEntriesDurationSuffix + '/*');
 durationRoute.get(getDurationStr);
 
+const getInterval = router.route(routesConfig.timeEntriesIntervalSuffix + '*');
+getInterval.get(getTimeInterval);
+
 const deleteByTaskIdRoute = router.route(routesConfig.deleteTimeEntryByTaskIdSuffix + '/*');
 deleteByTaskIdRoute.delete(deleteByTaskId);
 
@@ -340,6 +364,8 @@ getRunning.get(getRunningTimeEntryHandler);
 
 const getStatistics = router.route(routesConfig.timeEntriesStatisticsSufffix + '/*');
 getStatistics.get(getStatisticsHandler);
+
+
 
 const getNonCommittedDays = router.route(routesConfig.nonCommittedDaysSuffix);
 getNonCommittedDays.get(getNonCommittedDaysHandler);

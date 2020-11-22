@@ -293,4 +293,8 @@ export class CalculateDurationsByInterval {
       return e;
     }
   }
+
+  static async getTimeInterval() {
+
+  }
 }
