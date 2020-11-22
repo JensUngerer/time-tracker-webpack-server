@@ -88,7 +88,8 @@ export class CalculateDurationsByInterval {
       const singleCorrespondingTask = correspondingTasks[0];
       const groupCategory = singleCorrespondingTask.groupCategory;
       if (groupCategory !== groupCategorySelection) {
-        console.log('skipping time entry as:' + groupCategory + '!==' + groupCategorySelection);
+        // DEBUGGING:
+        // console.log('skipping time entry as:' + groupCategory + '!==' + groupCategorySelection);
         continue;
       }
 
