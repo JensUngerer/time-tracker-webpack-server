@@ -106,7 +106,6 @@ export class CalculateDurationsByInterval {
     const hoursInMilliseconds = (1000 * 60 * 60);
     const outputBuffer: IStatistic[] = [];
 
-
     if (!timeEntryDocsByInterval ||
       !timeEntryDocsByInterval.length) {
       console.error('cannot use empty time entries');
