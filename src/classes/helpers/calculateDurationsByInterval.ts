@@ -133,7 +133,6 @@ export class CalculateDurationsByInterval {
         }
         let durationInMilliseconds = 0;
         for (const oneTimeEntry of oneBufferOfTimeEntries) {
-          // const oneDurationInMilliseconds = oneTimeEntry.endTime.getTime() - oneTimeEntry.startTime.getTime();
           durationInMilliseconds += oneTimeEntry.durationInMilliseconds;
           overallDurationSumInMilliseconds += oneTimeEntry.durationInMilliseconds;
         }
@@ -176,24 +175,6 @@ export class CalculateDurationsByInterval {
       });
     });
 
-    // for (const oneBufferOfCorrespondingEntries of mapByBookingDeclarationId) {
-    //   console.log(oneBufferOfCorrespondingEntries);
-    // }
-
-    // const bookingsPromise = timeEntriesController.getBooking(bookingDeclarationId, App.mongoDbOperations);
-    // const bookingDocs = await bookingsPromise;
-    // if (!bookingDocs ||
-    //   !bookingDocs.length ||
-    //   bookingDocs.length > 1) {
-    //   console.error('no corresponding booking found');
-    //   return null;
-    // }
-    // const oneBookingDoc = bookingDocs[0];
-
-    // DEBUGGING:
-    // console.log(oneBookingDoc);
-    // console.log(oneTimeEntry);
-
     return statistics;
   }
 
@@ -212,9 +193,6 @@ export class CalculateDurationsByInterval {
       return null;
     }
 
-    // if (Object.prototype.hasOwnProperty.call(timeEntriesByCategory, groupCategorySelection)) {
-    //   const oneTimeEntryBufferByGroupCategory = timeEntriesByCategory[groupCategorySelection];
-
     // DEBUGGING:
     // console.log(JSON.stringify(oneTimeEntryBufferByGroupCategory, null, 4));
 
@@ -232,9 +210,7 @@ export class CalculateDurationsByInterval {
         // console.log(JSON.stringify(timeEntriesOfOneCategory));
 
         const oneTimeEntryIds: string[] = [];
-        // const oneTaskIds: string[] = [];
         let oneOverallSum = 0.0;
-        // timeEntriesOfOneCategory.forEach((oneTimeEntry: ITimeEntryDocument) => {
         for (const oneTimeEntry of timeEntriesOfOneCategory) {
           const oneDuration = oneTimeEntry.durationInMilliseconds;
           const taskId = oneTimeEntry._taskId;
@@ -256,7 +232,6 @@ export class CalculateDurationsByInterval {
           _timeEntryIds: oneTimeEntryIds,
           durationSumByTaskId: durationSumByTaskIdMap[taskCategory],
           durationSumFractionByTaskId: durationSumFractionByTaskIdMap[taskCategory],
-          // taskIds: oneTaskIds
         };
         durationSumOverAllCategories += oneOverallSum;
       }
@@ -264,7 +239,6 @@ export class CalculateDurationsByInterval {
 
     for (const taskCategory in durationSumByTaskIdMap) {
       if (Object.prototype.hasOwnProperty.call(durationSumByTaskIdMap, taskCategory)) {
-        // const element = durationSumByTaskIdMap[taskCategory];
         for (const taskId in durationSumByTaskIdMap[taskCategory]) {
           if (Object.prototype.hasOwnProperty.call(durationSumByTaskIdMap[taskCategory], taskId)) {
             const absolutedurationSumByTaskId = durationSumByTaskIdMap[taskCategory][taskId];
@@ -311,8 +285,6 @@ export class CalculateDurationsByInterval {
       } else {
         return CalculateDurationsByInterval.getByBookingDeclaration(timeEntryDocsByInterval);
       }
-      // return Object.values(categoryBufferMap);
-      // return null;
     }
     catch (e) {
       console.error('outer exception:');
