@@ -238,17 +238,6 @@ const getViaIdHandler = async (req: Request, res: Response) => {
 };
 
 const getStatisticsHandler = async (req: Request, res: Response) => {
-  // DEBUGGING:
-  // console.error(err);
-  // console.error(err.stack);
-
-  // if (err) {
-  //   console.error(err);
-  //   console.error(err.stack);
-  //   next(err);
-  //   return;
-  // }
-
   const isRawBookingBased = UrlHelpers.getProperty(req.url, routesConfig.isBookingBasedPropertyName);
   const isBookingBased = JSON.parse(isRawBookingBased as string);
   const isTakenCareIsDisabledRaw = UrlHelpers.getProperty(req.url, routesConfig.isTakenCareIsDisabledPropertyName);
@@ -276,13 +265,6 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
   // console.log(startTimeUtc.toUTCString());
   // console.log(endTimeUtc.toUTCString());
   try {
-    // const timeEntries = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTimeUtc, endTimeUtc);
-
-    // const serialized = Serialization.serialize(timeEntries);
-    // res.send(serialized);
-    // const returnValueByCategoryMap: { [category: string]: any[]} = {};
-
-    // console.log('summeries begin');
     let oneSummary: ITimeSummary;
     if (!isTakenCareIsDisabled) {
       oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory);
@@ -294,18 +276,12 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
       }
     }
     if (!oneSummary) {
+      // DEBUGGING:
       // console.error('no summaries');
       res.send('');
       return;
     }
-    // console.log(JSON.stringify(summaries, null, 4));
-    // console.log('summaries end');
-    // for (const key in summaries) {
-    //   if (Object.prototype.hasOwnProperty.call(summaries, key)) {
-    //     const element: ITimeSummary = summaries[key];
 
-    //   }
-    // }
     if (groupCategory !== null) {
       if (!oneSummary) {
         console.error('there is no summary for:' + groupCategory);
@@ -317,7 +293,6 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
 
       const serialized = Serialization.serialize(summaryByTaskCategories);
       res.send(serialized);
-      // console.log('end oneSummary for:' + groupCategory);
     } else {
       // DEBUGGING
       // console.log('groupCategory from url is null');
@@ -334,46 +309,6 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
         return;
       }
     }
-
-    // DEBUGGING:
-    // console.log(JSON.stringify(summeriesByCategoryMap, null, 4));
-
-    // const tasksByCategoryMap: {[category: string]: ITasksDocument[]} = {};
-    // for (const category in summeriesByCategoryMap) {
-    //     if (Object.prototype.hasOwnProperty.call(summeriesByCategoryMap, category)) {
-    //         // if (!tasksByCategoryMap[category]) {
-    //         //     tasksByCategoryMap[category] = [];
-    //         // }
-    //         // if (!returnValueByCategoryMap[category]) {
-    //         //     returnValueByCategoryMap[category] = [];
-    //         // }
-    //         // const oneSummaryByCategory = summeriesByCategoryMap[category];
-    //         // for (const oneTaskId of oneSummaryByCategory.taskIds) {
-    //         //     // const correspondingTask = await taskController.get()
-    //         //     const queryObj: FilterQuery<any> = {};
-    //         //     queryObj[routesConfig.taskIdProperty] = oneTaskId;
-    //         //     const correspondingTasks: ITasksDocument[] = await App.mongoDbOperations.getFiltered(routesConfig.tasksCollectionName, queryObj);
-    //         //     if (!correspondingTasks || !correspondingTasks.length || correspondingTasks.length > 1) {
-    //         //         console.error('more than one taks found! for:' + oneTaskId);
-    //         //         continue;
-    //         //     }
-    //         //     // there should be only one single document!
-    //         //     const FIRST_AND_ONLY_DOCUMENT_INDEX = 0;
-    //         //     tasksByCategoryMap[category].push(correspondingTasks[FIRST_AND_ONLY_DOCUMENT_INDEX]);
-    //         // }
-
-    //         returnValueByCategoryMap[category].push({
-    //             summeries: summeriesByCategoryMap[category],
-    //             // tasks: tasksByCategoryMap[category]
-    //         });
-    //     }
-    // }
-
-    // DEBUGGING:
-    // console.log(JSON.stringify(returnValueByCategoryMap, null, 4))
-
-    // const serialized = Serialization.serialize(summaries);
-    // res.send(serialized);
   } catch (e) {
     console.error('timeEntries.getStatisticsHandler error:');
     console.error(JSON.stringify(e, null, 4));
