@@ -83,13 +83,13 @@ export class CalculateDurationsByInterval {
         !correspondingTasks.length ||
         correspondingTasks.length !== 1) {
         console.error('cannot get task to read data from:');
-        return (null as any);
+        continue;
       }
       const singleCorrespondingTask = correspondingTasks[0];
       const groupCategory = singleCorrespondingTask.groupCategory;
       if (groupCategory !== groupCategorySelection) {
         console.log('skipping time entry as:' + groupCategory + '!==' + groupCategorySelection);
-        return;
+        continue;
       }
 
       const taskCategory = singleCorrespondingTask.taskCategory;
