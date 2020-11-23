@@ -32,6 +32,7 @@ export default {
         taskName: oneCorrespondingTask.name,
         taskId: oneTimeEntryDoc._taskId,
         taskNumber: oneCorrespondingTask.number,
+        taskNumberUrl: '',
       });
     }
 
