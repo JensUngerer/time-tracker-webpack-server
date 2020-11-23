@@ -43,7 +43,7 @@ export class CalculateDurationsByInterval {
       const lines: ITaskLine[] = [];
       for (let index = 0; index < tasks.length; index++) {
         const oneTaskToMerge = tasks[index];
-        const correspondingTimeEntries: ITimeEntryDocument[] = await timeEntriesController.getTimeEntriesForTaskIds([oneTaskToMerge.taskId], App.mongoDbOperations);
+        const correspondingTimeEntries: ITimeEntryDocument[] = await timeEntriesController.getTimeEntriesForTaskIds([oneTaskToMerge.taskId], App.mongoDbOperations, routesConfig.isDisabledInCommit);
         const correspondingTimeEntryIds: string[] = correspondingTimeEntries.map(oneTimeEntry => oneTimeEntry.timeEntryId);
         const oneTaskToMergeId = oneTaskToMerge.taskId;
         const baseUrl = ''; // is being filled in client?

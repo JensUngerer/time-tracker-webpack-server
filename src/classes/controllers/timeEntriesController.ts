@@ -100,7 +100,7 @@ export default {
     queryObj[routesConfig.endDateProperty] = null;
     return mongoDbOperations.getFiltered(routesConfig.timEntriesCollectionName, queryObj);
   },
-  getTimeEntriesForTaskIds(taskIds: string[], mongoDbOperations: MonogDbOperations) {
+  getTimeEntriesForTaskIds(taskIds: string[], mongoDbOperations: MonogDbOperations, isDisabledProperty?: string) {
     if (!taskIds || taskIds.length === 0) {
       console.error('cannot get timeEntries because of missing taskIds');
     }
@@ -112,7 +112,11 @@ export default {
           const queryObj: FilterQuery<any> = {};
           queryObj[routesConfig.taskIdPropertyAsForeignKey] = taskIds[taskIdIndex];
           // NEW only use the non-committed timeEntry-documents
-          queryObj[routesConfig.isDeletedInClientProperty] = false;
+          if (!isDisabledProperty) {
+            queryObj[routesConfig.isDeletedInClientProperty] = false;
+          } else {
+            queryObj[isDisabledProperty] = false;
+          }
 
           const promise = mongoDbOperations.getFiltered(routesConfig.timEntriesCollectionName, queryObj);
           promise.then((retrievedTimeEntries: ITimeEntryDocument[]) => {
