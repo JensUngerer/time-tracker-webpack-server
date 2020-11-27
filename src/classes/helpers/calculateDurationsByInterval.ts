@@ -13,6 +13,8 @@ import { MonogDbOperations } from './mongoDbOperations';
 import { IStatistic } from './../../../../common/typescript/iStatistic';
 
 export class CalculateDurationsByInterval {
+  static hoursInMilliseconds = (1000 * 60 * 60);
+
   static async aggregateSummarizedTasks(input: ITimeEntryDocument[], mongoDbOperations: MonogDbOperations): Promise<ISummarizedTasks[]> {
     return [];
   }
@@ -103,7 +105,6 @@ export class CalculateDurationsByInterval {
   }
 
   private static async getByBookingDeclaration(timeEntryDocsByInterval: ITimeEntryDocument[]) {
-    const hoursInMilliseconds = (1000 * 60 * 60);
     const outputBuffer: IStatistic[] = [];
 
     if (!timeEntryDocsByInterval ||
@@ -148,7 +149,7 @@ export class CalculateDurationsByInterval {
         const oneBookingDoc: IBookingDeclarationsDocument = bookingDocs[0];
         const code = oneBookingDoc.code;
         const description = oneBookingDoc.description;
-        const durationInHours = durationInMilliseconds / hoursInMilliseconds;
+        const durationInHours = durationInMilliseconds / CalculateDurationsByInterval.hoursInMilliseconds;
 
         outputBuffer.push({
           description: description,
@@ -161,7 +162,7 @@ export class CalculateDurationsByInterval {
         });
       }
     }
-    const overallDurationInHours = overallDurationSumInMilliseconds / hoursInMilliseconds;
+    const overallDurationInHours = overallDurationSumInMilliseconds / CalculateDurationsByInterval.hoursInMilliseconds;
     const statistics: IStatistic[] = [];
     outputBuffer.forEach((oneTemporaryBufferEntry) => {
       statistics.push({
@@ -245,7 +246,7 @@ export class CalculateDurationsByInterval {
             durationSumFractionByTaskIdMap[taskCategory][taskId] = absolutedurationSumByTaskId / durationSumOverAllCategories;
 
             // convert to hours:
-            durationSumByTaskIdMap[taskCategory][taskId] = (((absolutedurationSumByTaskId / 1000) / 60) / 60);
+            durationSumByTaskIdMap[taskCategory][taskId] = absolutedurationSumByTaskId / CalculateDurationsByInterval.hoursInMilliseconds;
           }
         }
       }
@@ -259,7 +260,7 @@ export class CalculateDurationsByInterval {
         sumEntry.overallDurationSumFraction = sumEntry.overallDurationSum / durationSumOverAllCategories;
 
         // convert to hours:
-        timeSummaryMap[oneTaskCat].overallDurationSum = (((timeSummaryMap[oneTaskCat].overallDurationSum / 1000) / 60) / 60);
+        timeSummaryMap[oneTaskCat].overallDurationSum = timeSummaryMap[oneTaskCat].overallDurationSum / CalculateDurationsByInterval.hoursInMilliseconds;
       }
     }
 
