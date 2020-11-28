@@ -28,6 +28,7 @@ export default {
       const oneCorrespondingTask: ITasksDocument = correspondingTasks[0];
       contextLines.push({
         duration: DurationFormatter.convertToDuration(oneTimeEntryDoc.durationInMilliseconds),
+        day: oneTimeEntryDoc.startTime,
         startTime: oneTimeEntryDoc.startTime,
         taskName: oneCorrespondingTask.name,
         taskId: oneTimeEntryDoc._taskId,
