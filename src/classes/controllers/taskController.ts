@@ -10,6 +10,7 @@ import { Serialization } from '../../../../common/typescript/helpers/serializati
 import { ITimeEntryDocument } from '../../../../common/typescript/mongoDB/iTimeEntryDocument';
 import { IContextLine } from '../../../../common/typescript/iContextLine';
 import { DurationFormatter } from './../../../../common/typescript/helpers/durationFormatter';
+import { Duration } from 'luxon';
 
 export default {
   async generateContextLinesFrom(timeEntryDocs: ITimeEntryDocument[], mongoDbOperations: MonogDbOperations): Promise<IContextLine[]> {
@@ -57,7 +58,11 @@ export default {
       let newSum;
       if (mongoDbDurationSumMap && mongoDbDurationSumMap[currentDayGetTime]) {
         const currentDurationSum = mongoDbDurationSumMap[currentDayGetTime];
-        newSum = currentDurationSum + propertyValue;
+
+        const currentDurationSumDuration = Duration.fromMillis(currentDurationSum);
+        const additionalDurationSum = Duration.fromMillis(propertyValue);
+        const newDurationSum = currentDurationSumDuration.plus(additionalDurationSum);
+        newSum = newDurationSum.milliseconds;
       } else {
         newSum = /*0 +*/ propertyValue;
       }
