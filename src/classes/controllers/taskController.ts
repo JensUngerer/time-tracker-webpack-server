@@ -10,7 +10,13 @@ import { Serialization } from '../../../../common/typescript/helpers/serializati
 import { ITimeEntryDocument } from '../../../../common/typescript/mongoDB/iTimeEntryDocument';
 import { IContextLine } from '../../../../common/typescript/iContextLine';
 import { DurationFormatter } from './../../../../common/typescript/helpers/durationFormatter';
-import { Duration } from 'luxon';
+import { DateTime, Duration } from 'luxon';
+import stringify  from 'csv-stringify';
+import { writeFile } from 'fs';
+
+const contextDurationFormat = 'hh:mm:ss';
+const contextIsoFormat = 'yyyy-MM-dd';
+const contextCsvFormat = 'yyyy-MM-dd_hh-mm-ss';
 
 export default {
   async generateContextLinesFrom(timeEntryDocs: ITimeEntryDocument[], mongoDbOperations: MonogDbOperations): Promise<IContextLine[]> {
@@ -18,6 +24,12 @@ export default {
     if (!timeEntryDocs || !timeEntryDocs.length) {
       return [];
     }
+    // const stringify = new Stringifier({
+    //   columns: ,
+    //   delimiter: ',',
+    // });
+    const columns = [{key:'day'}, {key: 'startTime'}, {key: 'durationText'}, {key:'taskNumber'}, {key: 'taskName'}];
+    const csvData = [];
 
     for (const oneTimeEntryDoc of timeEntryDocs) {
       const taskId = oneTimeEntryDoc._taskId;
@@ -27,16 +39,54 @@ export default {
         continue;
       }
       const oneCorrespondingTask: ITasksDocument = correspondingTasks[0];
-      contextLines.push({
-        duration: DurationFormatter.convertToDuration(oneTimeEntryDoc.durationInMilliseconds),
-        day: oneTimeEntryDoc.startTime,
-        startTime: oneTimeEntryDoc.startTime,
-        taskName: oneCorrespondingTask.name,
-        taskId: oneTimeEntryDoc._taskId,
-        taskNumber: oneCorrespondingTask.number,
-        taskNumberUrl: '',
-      });
+
+      const duration = DurationFormatter.convertToDuration(oneTimeEntryDoc.durationInMilliseconds);
+
+      // csv Data
+      try {
+        const durationText = duration.toFormat(contextDurationFormat);
+        const day = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(contextIsoFormat);
+        const startTime = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(contextDurationFormat);
+        const taskNumber = oneCorrespondingTask.number;
+        const taskName =  oneCorrespondingTask.name;
+
+        csvData.push({
+          durationText,
+          day,
+          startTime,
+          taskNumber,
+          taskName,
+        });
+
+        contextLines.push({
+          duration: durationText,
+          day: oneTimeEntryDoc.startTime,
+          startTime: oneTimeEntryDoc.startTime,
+          taskName: taskName,
+          taskId: oneTimeEntryDoc._taskId,
+          taskNumber: taskNumber,
+          taskNumberUrl: '',
+        });
+      } catch (e) {
+        console.log(e);
+      }
     }
+
+    stringify(csvData, { delimiter: ';', header: true, columns: columns }, (err, output) => {
+      if (err) {
+        throw err;
+      }
+
+      // https://stackoverflow.com/questions/10227107/write-to-a-csv-in-node-js/48463225
+      const fileName = DateTime.fromJSDate(new Date()).toFormat(contextCsvFormat) + '.csv';
+      writeFile(fileName, output, (writeFileErr) => {
+        if (writeFileErr) {
+          throw writeFileErr;
+        }
+        console.log(fileName);
+      });
+
+    });
 
     return contextLines;
   },
@@ -130,5 +180,5 @@ export default {
 
     const collectionName = routes.tasksCollectionName;
     return mongoDbOperations.patch(propertyName, propertyValue, collectionName, theQueryObj);
-  }
+  },
 };
