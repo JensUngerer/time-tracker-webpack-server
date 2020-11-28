@@ -57,7 +57,7 @@ export class CalculateDurationsByInterval {
         };
         lines.push(oneLine);
       }
-      const durationSum = oneParsedStatistics.overallDurationSum.milliseconds;
+      const durationSum = oneParsedStatistics.overallDurationSum.milliseconds / Constants.HOURS_IN_MILLISECONDS;
       const durationFraction = oneParsedStatistics.overallDurationSumFraction;
 
       output.push({
