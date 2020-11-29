@@ -15,6 +15,7 @@ import stringify  from 'csv-stringify';
 import { writeFile } from 'fs';
 import { Constants } from './../../../../common/typescript/constants';
 import { CsvHelper } from '../helpers/csvHelper';
+import App from '../../app';
 
 class TaskController {
   static async generateContextLinesFrom(timeEntryDocs: ITimeEntryDocument[], mongoDbOperations: MonogDbOperations): Promise<IContextLine[]> {
@@ -33,7 +34,7 @@ class TaskController {
       const taskId = oneTimeEntryDoc._taskId;
       const correspondingTasks: ITasksDocument[] = await TaskController.getViaTaskId(taskId, mongoDbOperations);
       if (!correspondingTasks || !correspondingTasks.length) {
-        console.error('no corresponding task for:' + taskId);
+        App.logger.error('no corresponding task for:' + taskId);
         continue;
       }
       const oneCorrespondingTask: ITasksDocument = correspondingTasks[0];
@@ -66,7 +67,7 @@ class TaskController {
           taskNumberUrl: '',
         });
       } catch (e) {
-        console.log(e);
+        App.logger.info(e);
       }
     }
 
@@ -82,7 +83,7 @@ class TaskController {
         if (writeFileErr) {
           throw writeFileErr;
         }
-        console.log(fileName);
+        App.logger.info(fileName);
       });
 
     });
@@ -96,7 +97,7 @@ class TaskController {
     const taskPromise = TaskController.getViaTaskId(taskId, mongoDbOperations);
     taskPromise.then((taskDocs: ITasksDocument[]) => {
       if (!taskDocs || !taskDocs.length || taskDocs.length > 1) {
-        console.error('no or more than one task!');
+        App.logger.error('no or more than one task!');
         return;
       }
       const durationSumInMillisecondsMap: { [dayGetTime: number]: number } = {};
@@ -135,8 +136,8 @@ class TaskController {
     query[routes.taskIdProperty] = taskId;
 
     // DEBUGGING:
-    // console.log('tasksCollection:' + routes.tasksCollectionName);
-    // console.log(JSON.stringify(query, null, 4));
+    // App.logger.info('tasksCollection:' + routes.tasksCollectionName);
+    // App.logger.info(JSON.stringify(query, null, 4));
 
     return mongoDbOperations.getFiltered(routes.tasksCollectionName, query);
   }

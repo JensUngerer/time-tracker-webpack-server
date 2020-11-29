@@ -81,14 +81,14 @@ const patchTimeEntriesStop = async (req: Request, res: Response) => {
   await timeEntriesController.patchStop(req, App.mongoDbOperations);
 
   // DEBUGGING:
-  // console.log('patchedEndTime:' + patchedEndTime);
+  // App.logger.info('patchedEndTime:' + patchedEndTime);
 
   // DEBUGGING:
-  // console.log(JSON.stringify(patchDayResult, null, 4));
+  // App.logger.info(JSON.stringify(patchDayResult, null, 4));
 
   // DEBUGGING:
-  // console.error(JSON.stringify(response, null, 4));
-  // console.error('writing duration in db');
+  // App.logger.error(JSON.stringify(response, null, 4));
+  // App.logger.error('writing duration in db');
 
   //b)
   const filterQuery = RequestProcessingHelpers.getFilerQuery(req);
@@ -99,23 +99,23 @@ const patchTimeEntriesStop = async (req: Request, res: Response) => {
     const startTime = theDocuments[0].startTime;
     await timeEntriesController.patchDay(req, App.mongoDbOperations, startTime);
   } else {
-    console.error('cannot patch day');
+    App.logger.error('cannot patch day');
   }
 
   // DEBUGGING
-  // console.error(JSON.stringify(theDocuments, null, 4));
-  // console.error('calling the patch-method');
+  // App.logger.error(JSON.stringify(theDocuments, null, 4));
+  // App.logger.error('calling the patch-method');
 
   // c) and d)
   await timeEntriesController.patchTheDurationInTimeEntriesDocument(App.mongoDbOperations, theDocuments, req);
 
   // DEBUGGING:
-  // console.error(JSON.stringify(durationInDbResponse, null, 4));
+  // App.logger.error(JSON.stringify(durationInDbResponse, null, 4));
   const theEndTimeStampPatchedDocuments: ITimeEntryDocument[] = await timeEntriesController.get(req, App.mongoDbOperations, filterQuery);
   if (!theEndTimeStampPatchedDocuments ||
     !theEndTimeStampPatchedDocuments.length ||
     theEndTimeStampPatchedDocuments.length !== 1) {
-    console.error('no unique document retrieved for patching timeEntry.endTime');
+    App.logger.error('no unique document retrieved for patching timeEntry.endTime');
     res.send('');
     return;
   }
@@ -143,17 +143,17 @@ const getDurationStr = async (req: Request, res: Response) => {
   const theId = UrlHelpers.getIdFromUlr(req.url);
 
   // DEBUGGING:
-  // console.log(theId);
+  // App.logger.info(theId);
 
   const response = await timeEntriesController.getDurationStr(theId, App.mongoDbOperations);
 
   // DEBUGGING:
-  // console.log(response);
+  // App.logger.info(response);
 
   const stringifiedResponse = Serialization.serialize(response);
 
   // DEBUGGING:
-  // console.log(stringifiedResponse);
+  // App.logger.info(stringifiedResponse);
 
   res.send(stringifiedResponse);
 };
@@ -162,19 +162,19 @@ const deleteByTaskId = async (req: Request, res: Response) => {
   const theId = UrlHelpers.getIdFromUlr(req.url);
 
   // DEBUGGING:
-  // console.error('theId:' + theId);
+  // App.logger.error('theId:' + theId);
 
   try {
     const timeEntriesByTaskId: ITimeEntryDocument[] = await timeEntriesController.getTimeEntriesForTaskIds([theId], App.mongoDbOperations);
 
     // DEBUGGING:
-    // console.error(JSON.stringify(timeEntriesByTaskId, null, 4));
+    // App.logger.error(JSON.stringify(timeEntriesByTaskId, null, 4));
 
     await new Promise((resolve: (value: any) => void) => {
       let theIndex = 0;
       const promiseThenLoop = () => {
         // DELETE
-        // console.error(theIndex + '<' + timeEntriesByTaskId.length);
+        // App.logger.error(theIndex + '<' + timeEntriesByTaskId.length);
 
         if (theIndex < timeEntriesByTaskId.length) {
           const theQueryObj: FilterQuery<any> = {};
@@ -193,7 +193,7 @@ const deleteByTaskId = async (req: Request, res: Response) => {
           });
         } else {
           // DEBUGGING
-          // console.error('finished');
+          // App.logger.error('finished');
           resolve(true);
         }
       };
@@ -202,7 +202,7 @@ const deleteByTaskId = async (req: Request, res: Response) => {
     });
     res.json(true);
   } catch (e) {
-    console.error(e);
+    App.logger.error(e);
     res.json(null);
   }
 };
@@ -214,7 +214,7 @@ const getRunningTimeEntryHandler = async (req: Request, res: Response) => {
     return;
   }
   if (runningTimeEntries.length > 1) {
-    console.error('more than one running time-entry found');
+    App.logger.error('more than one running time-entry found');
   }
 
   const stringifiedResponse = Serialization.serialize(runningTimeEntries[0]);
@@ -229,7 +229,7 @@ const getViaIdHandler = async (req: Request, res: Response) => {
   const timeEntries: ITimeEntryDocument[] = await timeEntriesPromise;
 
   if (!timeEntries || timeEntries.length !== 1) {
-    console.error('no or more than one time entry found');
+    App.logger.error('no or more than one time entry found');
     res.send(null);
     return;
   }
@@ -240,18 +240,18 @@ const getViaIdHandler = async (req: Request, res: Response) => {
 
 const getTimeInterval = async (req: Request, res: Response)  => {
   // DEBUGGING:
-  // console.log('getTimeInterval');
+  // App.logger.info('getTimeInterval');
 
   const startTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.startTimeProperty);
   const endTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.endDateProperty);
   if (!startTimeUtc || !endTimeUtc) {
-    console.error('not utc - start- or end-time');
+    App.logger.error('not utc - start- or end-time');
     res.send('');
     return;
   }
   const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTimeUtc, endTimeUtc);
   if (!timeEntryDocsByInterval || !timeEntryDocsByInterval.length) {
-    console.error('no time entries found');
+    App.logger.error('no time entries found');
     res.send([]);
     return;
   }
@@ -266,27 +266,27 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
   const isTakenCareIsDisabledRaw = UrlHelpers.getProperty(req.url, routesConfig.isTakenCareIsDisabledPropertyName);
   const isTakenCareIsDisabled = JSON.parse(isTakenCareIsDisabledRaw as string);
   // DEBUGGING:
-  // console.log(isBookingBased);
+  // App.logger.info(isBookingBased);
 
   let groupCategory = UrlHelpers.getProperty(req.url, routesConfig.groupCategoryPropertyName);
   if (groupCategory === 'null') {
     groupCategory = null;
   }
   // DEBUGGING:
-  // console.log(groupCategory);
+  // App.logger.info(groupCategory);
 
   const startTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.startTimeProperty);
   const endTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.endDateProperty);
   if (!startTimeUtc || !endTimeUtc) {
-    console.error('no time stamps found in url');
+    App.logger.error('no time stamps found in url');
     res.send('no time stamps in ulr');
     return;
   }
 
   // //  DEBUGGING
-  // console.log(groupCategory);
-  // console.log(startTimeUtc.toUTCString());
-  // console.log(endTimeUtc.toUTCString());
+  // App.logger.info(groupCategory);
+  // App.logger.info(startTimeUtc.toUTCString());
+  // App.logger.info(endTimeUtc.toUTCString());
   try {
     let oneSummary: ITimeSummary;
     if (!isTakenCareIsDisabled) {
@@ -300,14 +300,14 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
     }
     if (!oneSummary) {
       // DEBUGGING:
-      // console.error('no summaries');
+      // App.logger.error('no summaries');
       res.send('');
       return;
     }
 
     if (groupCategory !== null) {
       if (!oneSummary) {
-        console.error('there is no summary for:' + groupCategory);
+        App.logger.error('there is no summary for:' + groupCategory);
         res.send('');
         return;
       }
@@ -318,7 +318,7 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
       res.send(serialized);
     } else {
       // DEBUGGING
-      // console.log('groupCategory from url is null');
+      // App.logger.info('groupCategory from url is null');
       if (isBookingBased) {
         // const summaryByTasksIndependentOfCategory: ISummarizedTasks[] = await CalculateDurationsByInterval.aggregateSummarizedTasks(summaries, App.mongoDbOperations);
         // const serialized = Serialization.serialize(summaryByTasksIndependentOfCategory);
@@ -326,15 +326,15 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
         res.send(serialized);
         return;
       } else {
-        console.error('category is null but isBookingBased:' + isBookingBased);
-        console.error('returning');
+        App.logger.error('category is null but isBookingBased:' + isBookingBased);
+        App.logger.error('returning');
         res.send('');
         return;
       }
     }
   } catch (e) {
-    console.error('timeEntries.getStatisticsHandler error:');
-    console.error(JSON.stringify(e, null, 4));
+    App.logger.error('timeEntries.getStatisticsHandler error:');
+    App.logger.error(JSON.stringify(e, null, 4));
     res.send(JSON.stringify(e, null, 4));
   }
 };
@@ -366,8 +366,6 @@ getRunning.get(getRunningTimeEntryHandler);
 
 const getStatistics = router.route(routesConfig.timeEntriesStatisticsSufffix + '/*');
 getStatistics.get(getStatisticsHandler);
-
-
 
 const getNonCommittedDays = router.route(routesConfig.nonCommittedDaysSuffix);
 getNonCommittedDays.get(getNonCommittedDaysHandler);

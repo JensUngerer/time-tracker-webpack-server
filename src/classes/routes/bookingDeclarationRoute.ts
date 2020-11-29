@@ -8,24 +8,24 @@ import App from '../../app';
 const router = express.Router();
 
 const postBookingDeclaration = async (req: Request, res: Response) => {
-    const response = await bookingDeclarationController.post(req, App.mongoDbOperations);
-    const stringifiedResponse = Serialization.serialize(response);
-    res.send(stringifiedResponse);
+  const response = await bookingDeclarationController.post(req, App.mongoDbOperations);
+  const stringifiedResponse = Serialization.serialize(response);
+  res.send(stringifiedResponse);
 };
 
 const getViaProjectId = async (req: Request, res: Response) => {
-    const response = await bookingDeclarationController.getViaProjectId(req, App.mongoDbOperations);
-    const stringifiedResponse = Serialization.serialize(response);
-    res.send(stringifiedResponse);
+  const response = await bookingDeclarationController.getViaProjectId(req, App.mongoDbOperations);
+  const stringifiedResponse = Serialization.serialize(response);
+  res.send(stringifiedResponse);
 };
 
 const getViaId = async (req: Request, res: Response) => {
-    // DEBUGGING:
-    // console.log('getViaId');
+  // DEBUGGING:
+  // App.logger.info('getViaId');
 
-    const response = await bookingDeclarationController.getViaId(req, App.mongoDbOperations);
-    const stringifiedResponse = Serialization.serialize(response);
-    res.send(stringifiedResponse);
+  const response = await bookingDeclarationController.getViaId(req, App.mongoDbOperations);
+  const stringifiedResponse = Serialization.serialize(response);
+  res.send(stringifiedResponse);
 };
 const rootRoute = router.route('/');
 rootRoute.post(postBookingDeclaration);
@@ -37,6 +37,6 @@ const getViaIdRoute = router.route('/*');
 getViaIdRoute.get(getViaId);
 
 // DEBUGGING:
-// console.log(getViaProjectIdRoute.path);
+// App.logger.info(getViaProjectIdRoute.path);
 
 export default router;

@@ -14,6 +14,7 @@ import taskRoute from './classes/routes//taskRoute';
 import projectRoute from './classes/routes//projectRoute';
 import timeEntries from './classes/routes//timeEntries';
 import bookingDeclarationRoute from './classes/routes//bookingDeclarationRoute';
+import { getLogger, Logger } from 'log4js';
 
 export interface IApp {
   configure(): void;
@@ -28,11 +29,16 @@ export class App implements IApp {
   private express: Application;
   private server: Server;
   public static mongoDbOperations: MonogDbOperations;
+  static logger: Logger;
 
   public constructor(port: number, hostname: string) {
+    const logger = getLogger();
+    logger.level = 'debug';
+    App.logger = logger;
+
     this.express = express();
     this.server = this.express.listen(port, hostname, () => {
-      console.log('successfully started on: ' + hostname + ':' + port);
+      App.logger.info('successfully started on: ' + hostname + ':' + port);
     });
   }
 
@@ -70,14 +76,14 @@ export class App implements IApp {
     // https://stackoverflow.com/questions/26079611/node-js-typeerror-path-must-be-absolute-or-specify-root-to-res-sendfile-failed
     this.express.get('/', (request: Request, response: Response) => {
       // DEBUGGING:
-      // console.log(request.url);
-      // console.log(pathStr);
+      // App.logger.info(request.url);
+      // App.logger.info(pathStr);
       response.sendFile('index.html', { root: pathStr });
     });
     this.express.get('/' + routesConfig.viewsPrefix + '*', (request: Request, response: Response) => {
       // DEBUGGING:
-      // console.log(request.url);
-      // console.log(pathStr);
+      // App.logger.info(request.url);
+      // App.logger.info(pathStr);
       response.sendFile('index.html', { root: pathStr });
     });
   }
@@ -96,15 +102,15 @@ export class App implements IApp {
       // https://hackernoon.com/graceful-shutdown-in-nodejs-2f8f59d1c357
       this.server.close((err: Error | undefined) => {
         if (err) {
-          console.error('error when closing the http-server');
-          // console.error(err);
-          // console.error(JSON.stringify(err, null, 4));
+          App.logger.error('error when closing the http-server');
+          // App.logger.error(err);
+          // App.logger.error(JSON.stringify(err, null, 4));
           reject(err);
           return;
         }
-        console.error('http-server successfully closed');
+        App.logger.error('http-server successfully closed');
 
-        resolve(true)
+        resolve(true);
       });
     });
   }

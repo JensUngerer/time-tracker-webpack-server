@@ -1,81 +1,81 @@
-import { IApp } from "./app";
+import App, { IApp } from './app';
 
 export class AppManager {
-    static app: IApp;
+  static app: IApp;
 
-    static gracefulShutdown: (shutdownMsg: string, isStandalone: boolean) => Promise<any> = (shutdownMsg: string, isStandalone: boolean) => {
-        const disconnectPromise = AppManager.app.closeDataBaseConnection();
-        if (isStandalone) {
-            disconnectPromise.then(() => {
-                console.error('database disconnect resolved');
-                const shutdownPromise: Promise<boolean> = AppManager.app.shutdown();
-                shutdownPromise.then(() => {
-                    console.error(shutdownMsg);
-                    console.error('process.exit()');
-                    process.exit(0);
-                });
-                shutdownPromise.catch((err: any) => {
-                    console.error(err);
-                    console.error('process.exit()');
-                    process.exit(1);
-                });
-            });
-            disconnectPromise.catch((rejectionReason: any) => {
-                console.error('database disconnect rejected with');
-                if (rejectionReason) {
-                    console.error(rejectionReason.toString());
-                    console.error(JSON.stringify(rejectionReason));
-                }
-                const shutdownPromise: Promise<boolean> = AppManager.app.shutdown();
-                shutdownPromise.then(() => {
-                    console.error(shutdownMsg);
-                    console.error('process.exit()');
-                    process.exit(2);
-                });
-                shutdownPromise.catch((err: any) => {
-                    console.error(err);
-                    console.error('process.exit()');
-                    process.exit(3);
-                });    
-            });
-        } else {
-            disconnectPromise.then(() => {
-                process.exit(0);
-            });
-            disconnectPromise.then(() => {
-                process.exit(4);
-            });
+  static gracefulShutdown: (shutdownMsg: string, isStandalone: boolean) => Promise<any> = (shutdownMsg: string, isStandalone: boolean) => {
+    const disconnectPromise = AppManager.app.closeDataBaseConnection();
+    if (isStandalone) {
+      disconnectPromise.then(() => {
+        App.logger.error('database disconnect resolved');
+        const shutdownPromise: Promise<boolean> = AppManager.app.shutdown();
+        shutdownPromise.then(() => {
+          App.logger.error(shutdownMsg);
+          App.logger.error('process.exit()');
+          process.exit(0);
+        });
+        shutdownPromise.catch((err: any) => {
+          App.logger.error(err);
+          App.logger.error('process.exit()');
+          process.exit(1);
+        });
+      });
+      disconnectPromise.catch((rejectionReason: any) => {
+        App.logger.error('database disconnect rejected with');
+        if (rejectionReason) {
+          App.logger.error(rejectionReason.toString());
+          App.logger.error(JSON.stringify(rejectionReason));
         }
-        return disconnectPromise;
+        const shutdownPromise: Promise<boolean> = AppManager.app.shutdown();
+        shutdownPromise.then(() => {
+          App.logger.error(shutdownMsg);
+          App.logger.error('process.exit()');
+          process.exit(2);
+        });
+        shutdownPromise.catch((err: any) => {
+          App.logger.error(err);
+          App.logger.error('process.exit()');
+          process.exit(3);
+        });
+      });
+    } else {
+      disconnectPromise.then(() => {
+        process.exit(0);
+      });
+      disconnectPromise.then(() => {
+        process.exit(4);
+      });
     }
+    return disconnectPromise;
+  };
 
-    public static registerAppClosingEvent(app: IApp, isStandalone: boolean) {
-        AppManager.app = app;
-        if (isStandalone) {
-            // https://nodejs.org/api/process.html#process_signal_events
-            const SIGINT = 'SIGINT';
-            const sigIntCallback = () => {
-                process.off(SIGINT, sigIntCallback);
+  public static registerAppClosingEvent(app: IApp, isStandalone: boolean) {
+    AppManager.app = app;
+    if (isStandalone) {
+      // https://nodejs.org/api/process.html#process_signal_events
+      const SIGINT = 'SIGINT';
+      const sigIntCallback = () => {
+        process.off(SIGINT, sigIntCallback);
 
-                // DEBUGGING:
-                console.error(SIGINT + ' event removed');
+        // DEBUGGING:
+        App.logger.error(SIGINT + ' event removed');
 
-                AppManager.gracefulShutdown('SIGINT: CTRL+ C -> graceful shutdown completed -> process.exit()', isStandalone);
-            };
-            
-            process.on(SIGINT, sigIntCallback);
+        AppManager.gracefulShutdown('SIGINT: CTRL+ C -> graceful shutdown completed -> process.exit()', isStandalone);
+      };
 
-            const SIGHUP = 'SIGHUP';
-            const sigHupCallback = () => {
-                process.off(SIGHUP, sigHupCallback);
+      process.on(SIGINT, sigIntCallback);
 
-                // DEBUGGING:
-                console.error(SIGHUP + ' event removed');
+      const SIGHUP = 'SIGHUP';
+      const sigHupCallback = () => {
+        process.off(SIGHUP, sigHupCallback);
 
-                AppManager.gracefulShutdown('SIGHUP: window is closed -> graceful shutdown completed -> process.exit()', isStandalone);
-            };
+        // DEBUGGING:
+        App.logger.error(SIGHUP + ' event removed');
 
-            process.on(SIGHUP, sigHupCallback);
-        }
+        AppManager.gracefulShutdown('SIGHUP: window is closed -> graceful shutdown completed -> process.exit()', isStandalone);
+      };
+
+      process.on(SIGHUP, sigHupCallback);
     }
+  }
 }

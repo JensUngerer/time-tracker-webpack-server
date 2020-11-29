@@ -11,7 +11,7 @@ export class UrlHelpers {
     const properties = urlSuffix.split('?');
 
     // DEBUGGING
-    // console.log(properties);
+    // App.logger.info(properties);
 
     return properties;
   }
@@ -30,7 +30,7 @@ export class UrlHelpers {
     const suffix = UrlHelpers.getStringAfterLastSlash(rawUrl);
 
     // DEBUGGING:
-    // console.log(suffix);
+    // App.logger.info(suffix);
 
     const properties = UrlHelpers.getPropertiesForm(suffix);
     const foundPropertyKeyValuePair = properties.find((onePropertyKeyValuePair: string) => {
@@ -41,7 +41,7 @@ export class UrlHelpers {
     }
 
     // DEBUGGING
-    // console.log(foundPropertyKeyValuePair);
+    // App.logger.info(foundPropertyKeyValuePair);
 
     const indexOfEqualSign = foundPropertyKeyValuePair.indexOf('=');
     if (indexOfEqualSign === -1) {
@@ -62,7 +62,7 @@ export class UrlHelpers {
     }
 
     // DEBUGGING:
-    // console.log(propertyValue);
+    // App.logger.info(propertyValue);
 
     return new Date(parseFloat(propertyValue));
   }

@@ -1,219 +1,220 @@
+import App from '../../app';
 import { MongoClient, Cursor, FilterQuery } from 'mongodb';
 // @ts-ignore
 import * as routes from '../../../../common/typescript/routes.js';
 
 export class MonogDbOperations {
-    private mongoClient: MongoClient | null = null;
-    private databaseName: string | null = null;
-    private url: string | null = null;
-    private connection: Promise<MongoClient> | null = null;
+  private mongoClient: MongoClient | null = null;
+  private databaseName: string | null = null;
+  private url: string | null = null;
+  private connection: Promise<MongoClient> | null = null;
 
-    public prepareConnection() {
-        this.url = routes.url;
-        this.databaseName = routes.databaseName;
+  public prepareConnection() {
+    this.url = routes.url;
+    this.databaseName = routes.databaseName;
 
-        this.mongoClient = new MongoClient(this.url as string, { useNewUrlParser: true, useUnifiedTopology: true });
-        this.connection = this.mongoClient.connect();
+    this.mongoClient = new MongoClient(this.url as string, { useNewUrlParser: true, useUnifiedTopology: true });
+    this.connection = this.mongoClient.connect();
+  }
+
+  public closeConnection(): Promise<void> | null {
+    if (this.mongoClient === null) {
+      App.logger.error('cannot close connection');
+      return null;
     }
+    return this.mongoClient.close();
+  }
 
-    public closeConnection(): Promise<void> | null {
+  public patchPush(propertyName: string, propertyValue: any, collectionName: string, queryObj: FilterQuery<any>) {
+    return new Promise<any>((resolve: (value: any) => void, reject: (value: any) => void) => {
+      if (this.connection === null) {
+        return;
+      }
+      this.connection.then((theMongoClient: any) => {
         if (this.mongoClient === null) {
-            console.error('cannot close connection');
-            return null;
+          return;
         }
-        return this.mongoClient.close();
-    }
+        // DEBUGGING:
+        // App.logger.error('connectionSuccess');
+        // App.logger.error(connectionSuccess);
 
-    public patchPush(propertyName: string, propertyValue: any, collectionName: string, queryObj: FilterQuery<any>) {
-        return new Promise<any>((resolve: (value: any) => void, reject: (value: any) => void) => {
-            if (this.connection === null) {
-                return;
-            }
-            this.connection.then((theMongoClient: any) => {
-                if (this.mongoClient === null) {
-                    return;
-                }
-                // DEBUGGING:
-                // console.error('connectionSuccess');
-                // console.error(connectionSuccess);
+        const db = this.mongoClient.db(this.databaseName as string);
+        const collection = db.collection(collectionName);
 
-                const db = this.mongoClient.db(this.databaseName as string);
-                const collection = db.collection(collectionName);
+        const updateObj: any = { $push: {} };
+        updateObj.$push[propertyName] = propertyValue;
 
-                const updateObj: any = { $push: {} };
-                updateObj.$push[propertyName] = propertyValue;
+        // // https://mongodb.github.io/node-mongodb-native/3.2/tutorials/crud/
 
-                // // https://mongodb.github.io/node-mongodb-native/3.2/tutorials/crud/
+        // // DEBUGGING:
+        // App.logger.error(JSON.stringify({
+        //     queryObj,
+        //     updateObj
+        // }, null, 4));
 
-                // // DEBUGGING:
-                // console.error(JSON.stringify({
-                //     queryObj,
-                //     updateObj
-                // }, null, 4));
+        collection.updateOne(queryObj, updateObj, (err: any, result: any) => {
+          if (err) {
+            App.logger.error('update failed');
+            resolve(err);
+            return;
+          }
 
-                collection.updateOne(queryObj, updateObj, (err: any, result: any) => {
-                    if (err) {
-                        console.error('update failed');
-                        resolve(err);
-                        return;
-                    }
-
-                    resolve(result);
-                });
-
-            });
-            this.connection.catch((connectionErr: any) => {
-                console.error('error when connecting to db');
-                console.error(connectionErr);
-                resolve(connectionErr);
-            });
+          resolve(result);
         });
-    }
 
-    public patch(propertyName: string, propertyValue: any, collectionName: string, queryObj: FilterQuery<any>) {
-        return new Promise<any>((resolve: (value: any) => void, reject: (value: any) => void) => {
-            if (this.connection === null) {
-                return;
-            }
-            this.connection.then((theMongoClient: any) => {
-                if (this.mongoClient === null) {
-                    return;
-                }
-                // DEBUGGING:
-                // console.error('connectionSuccess');
-                // console.error(connectionSuccess);
+      });
+      this.connection.catch((connectionErr: any) => {
+        App.logger.error('error when connecting to db');
+        App.logger.error(connectionErr);
+        resolve(connectionErr);
+      });
+    });
+  }
 
-                const db = this.mongoClient.db(this.databaseName as string);
-                const collection = db.collection(collectionName);
+  public patch(propertyName: string, propertyValue: any, collectionName: string, queryObj: FilterQuery<any>) {
+    return new Promise<any>((resolve: (value: any) => void, reject: (value: any) => void) => {
+      if (this.connection === null) {
+        return;
+      }
+      this.connection.then((theMongoClient: any) => {
+        if (this.mongoClient === null) {
+          return;
+        }
+        // DEBUGGING:
+        // App.logger.error('connectionSuccess');
+        // App.logger.error(connectionSuccess);
 
-                // https://mongodb.github.io/node-mongodb-native/3.2/tutorials/crud/
-                const updateObj: any = { $set: {} };
-                updateObj.$set[propertyName] = propertyValue;
+        const db = this.mongoClient.db(this.databaseName as string);
+        const collection = db.collection(collectionName);
 
-                // DEBUGGING:
-                // console.error('calling updateOne');
-                // console.error(JSON.stringify({
-                //     queryObj,
-                //     updateObj
-                // }, null, 4));
+        // https://mongodb.github.io/node-mongodb-native/3.2/tutorials/crud/
+        const updateObj: any = { $set: {} };
+        updateObj.$set[propertyName] = propertyValue;
 
-                collection.updateOne(queryObj, updateObj, (err: any, result: any) => {
-                    if (err) {
-                        console.error('update failed');
-                        resolve(err);
-                        return;
-                    }
+        // DEBUGGING:
+        // App.logger.error('calling updateOne');
+        // App.logger.error(JSON.stringify({
+        //     queryObj,
+        //     updateObj
+        // }, null, 4));
 
-                    resolve(result);
-                });
-            });
-            this.connection.catch((connectionErr: any) => {
-                console.error('error when connecting to db');
-                console.error(connectionErr);
-                resolve(connectionErr);
-            });
+        collection.updateOne(queryObj, updateObj, (err: any, result: any) => {
+          if (err) {
+            App.logger.error('update failed');
+            resolve(err);
+            return;
+          }
+
+          resolve(result);
         });
-    }
+      });
+      this.connection.catch((connectionErr: any) => {
+        App.logger.error('error when connecting to db');
+        App.logger.error(connectionErr);
+        resolve(connectionErr);
+      });
+    });
+  }
 
-    public getFiltered(collectionName: string, queryObj?: FilterQuery<any>): Promise<any[]> {
-        return new Promise<any>((resolve: (value: any[]) => void, reject: (value: any) => void) => {
-            if (this.connection === null) {
-                return;
-            }
-            this.connection.then((theMongoClient: any) => {
-                if (this.mongoClient === null) {
-                    return;
-                }
-                // DEBUGGING:
-                // console.error('connectionSuccess');
-                // console.error(connectionSuccess);
+  public getFiltered(collectionName: string, queryObj?: FilterQuery<any>): Promise<any[]> {
+    return new Promise<any>((resolve: (value: any[]) => void, reject: (value: any) => void) => {
+      if (this.connection === null) {
+        return;
+      }
+      this.connection.then((theMongoClient: any) => {
+        if (this.mongoClient === null) {
+          return;
+        }
+        // DEBUGGING:
+        // App.logger.error('connectionSuccess');
+        // App.logger.error(connectionSuccess);
 
-                const db = this.mongoClient.db(this.databaseName as string);
-                const collection = db.collection(collectionName);
+        const db = this.mongoClient.db(this.databaseName as string);
+        const collection = db.collection(collectionName);
 
-                const retrievedFilterQuery = queryObj ? queryObj : {};
+        const retrievedFilterQuery = queryObj ? queryObj : {};
 
-                // DEBUGGING:
-                // console.error(JSON.stringify({
-                //     collectionName,
-                //     retrievedFilterQuery
-                // }, null, 4));
+        // DEBUGGING:
+        // App.logger.error(JSON.stringify({
+        //     collectionName,
+        //     retrievedFilterQuery
+        // }, null, 4));
 
-                const cursor: Cursor<any> = collection.find(retrievedFilterQuery);
-                if (!cursor) {
-                    console.error('!cursor');
-                    resolve([]);
-                    this.mongoClient.close();
-                    return;
-                }
+        const cursor: Cursor<any> = collection.find(retrievedFilterQuery);
+        if (!cursor) {
+          App.logger.error('!cursor');
+          resolve([]);
+          this.mongoClient.close();
+          return;
+        }
 
-                cursor.toArray().then((resolvedData: any[]) => {
-                    // DEBUGGING:
-                    // console.error(JSON.stringify(resolvedData, null, 4));
+        cursor.toArray().then((resolvedData: any[]) => {
+          // DEBUGGING:
+          // App.logger.error(JSON.stringify(resolvedData, null, 4));
 
-                    resolve(resolvedData);
-                }).catch(() => {
-                    resolve([]);
-                });
-            });
-
-            this.connection.catch((connectionErr: any) => {
-                console.error('error when connecting to db');
-                console.error(connectionErr);
-                resolve(connectionErr);
-            });
+          resolve(resolvedData);
+        }).catch(() => {
+          resolve([]);
         });
-    }
+      });
 
-    public insertOne(data: any, collectionName: string) {
-        // https://mongodb.github.io/node-mongodb-native/
-        // https://mongodb.github.io/node-mongodb-native/3.2/
+      this.connection.catch((connectionErr: any) => {
+        App.logger.error('error when connecting to db');
+        App.logger.error(connectionErr);
+        resolve(connectionErr);
+      });
+    });
+  }
 
-        return new Promise<any>((resolve: (value: any) => void, reject: (value: any) => void) => {
-            if (this.connection === null) {
-                return;
-            }
-            this.connection.then((theMongoClient: any) => {
-                if (this.mongoClient === null) {
-                    return;
-                }
-                // DEBUGGING:
-                // console.error('connectionSuccess');
-                // console.error(connectionSuccess);
+  public insertOne(data: any, collectionName: string) {
+    // https://mongodb.github.io/node-mongodb-native/
+    // https://mongodb.github.io/node-mongodb-native/3.2/
 
-                const db = this.mongoClient.db(this.databaseName as string);
-                const collection = db.collection(collectionName);
+    return new Promise<any>((resolve: (value: any) => void, reject: (value: any) => void) => {
+      if (this.connection === null) {
+        return;
+      }
+      this.connection.then((theMongoClient: any) => {
+        if (this.mongoClient === null) {
+          return;
+        }
+        // DEBUGGING:
+        // App.logger.error('connectionSuccess');
+        // App.logger.error(connectionSuccess);
 
-                // DEBUGGING:
-                // console.log('insertOne');
-                // console.log(collectionName);
-                // console.log(JSON.stringify(data, null, 4));
-                
-                // should no longer be necessary as data _should_ not contain _id
-                if (data && data._id) {
-                    console.error('there is already an id -> returning');
-                    return;
-                }
+        const db = this.mongoClient.db(this.databaseName as string);
+        const collection = db.collection(collectionName);
 
-                collection.insertOne(data, (insertError: any, result: any) => {
-                    if (insertError) {
-                        resolve(insertError);
-                        return;
-                    }
+        // DEBUGGING:
+        // App.logger.info('insertOne');
+        // App.logger.info(collectionName);
+        // App.logger.info(JSON.stringify(data, null, 4));
 
-                    // DEBUGGING:
-                    // console.log(JSON.stringify(result, null, 4));
+        // should no longer be necessary as data _should_ not contain _id
+        if (data && data._id) {
+          App.logger.error('there is already an id -> returning');
+          return;
+        }
 
-                    resolve(data);
-                    // this.mongoClient.close();
-                });
-            });
+        collection.insertOne(data, (insertError: any, result: any) => {
+          if (insertError) {
+            resolve(insertError);
+            return;
+          }
 
-            this.connection.catch((connectionErr: any) => {
-                console.error('error when connecting to db');
-                console.error(connectionErr);
-                resolve(connectionErr);
-            });
+          // DEBUGGING:
+          // App.logger.info(JSON.stringify(result, null, 4));
+
+          resolve(data);
+          // this.mongoClient.close();
         });
-    }
+      });
+
+      this.connection.catch((connectionErr: any) => {
+        App.logger.error('error when connecting to db');
+        App.logger.error(connectionErr);
+        resolve(connectionErr);
+      });
+    });
+  }
 }

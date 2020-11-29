@@ -12,6 +12,7 @@ import { DurationCalculator } from './../../../../common/typescript/helpers/dura
 import { ITasksDocument } from '../../../../common/typescript/mongoDB/iTasksDocument';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
 import { ITimeInterval } from './../../../../common/typescript/iTimeInterval';
+import App from '../../app';
 
 export default {
   getNonCommittedDays(mongoDbOperations: MonogDbOperations, isDisabledProperty: string) {
@@ -23,7 +24,7 @@ export default {
       const allNonDisabledTimeEntries = mongoDbOperations.getFiltered(routesConfig.timEntriesCollectionName, theQueryObj);
       allNonDisabledTimeEntries.then((timeEntryDocs: ITimeEntryDocument[]) => {
         // DEBUGGING:
-        // console.log(JSON.stringify(timeEntryDocs, null, 4));
+        // App.logger.info(JSON.stringify(timeEntryDocs, null, 4));
         if (!timeEntryDocs || !timeEntryDocs.length) {
           resolve(null);
           return;
@@ -40,7 +41,7 @@ export default {
         });
 
         // DEBUGGING:
-        // console.log(JSON.stringify(response, null, 4));
+        // App.logger.info(JSON.stringify(response, null, 4));
 
         resolve(Object.values(daysByStartTime));
       });
@@ -90,7 +91,7 @@ export default {
     }
 
     // DEBUGGING
-    // console.log(JSON.stringify(theQueryObj, null, 4));
+    // App.logger.info(JSON.stringify(theQueryObj, null, 4));
 
     const promise = mongoDbOperations.getFiltered(routesConfig.timEntriesCollectionName, theQueryObj);
     return promise;
@@ -102,7 +103,7 @@ export default {
   },
   getTimeEntriesForTaskIds(taskIds: string[], mongoDbOperations: MonogDbOperations, isDisabledProperty?: string) {
     if (!taskIds || taskIds.length === 0) {
-      console.error('cannot get timeEntries because of missing taskIds');
+      App.logger.error('cannot get timeEntries because of missing taskIds');
     }
     return new Promise<any>((resolve: (value: any) => void) => {
       let timeEntries: ITimeEntryDocument[] = [];
@@ -121,7 +122,7 @@ export default {
           const promise = mongoDbOperations.getFiltered(routesConfig.timEntriesCollectionName, queryObj);
           promise.then((retrievedTimeEntries: ITimeEntryDocument[]) => {
             // DEBUGGING:
-            // console.error(JSON.stringify(retrievedTimeEntries, null, 4));
+            // App.logger.error(JSON.stringify(retrievedTimeEntries, null, 4));
 
             timeEntries = timeEntries.concat(retrievedTimeEntries);
 
@@ -129,8 +130,8 @@ export default {
             promiseThenLoop();
           });
           promise.catch(() => {
-            console.error('something went wrong when getting the timeEntries for index:' + taskIdIndex);
-            console.error(JSON.stringify(taskIds, null, 4));
+            App.logger.error('something went wrong when getting the timeEntries for index:' + taskIdIndex);
+            App.logger.error(JSON.stringify(taskIds, null, 4));
 
             taskIdIndex++;
             promiseThenLoop();
@@ -150,11 +151,11 @@ export default {
     return new Promise<any>((resolve: (value: any) => void) => {
       tasksPromise.then((retrievedTasks: ITasksDocument[]) => {
         // DEBUGGING:
-        // console.error(JSON.stringify(retrievedTasks, null, 4));
+        // App.logger.error(JSON.stringify(retrievedTasks, null, 4));
 
         const taskIds: string[] = [];
         if (!retrievedTasks || retrievedTasks.length === 0) {
-          console.error('there are no tasks for projectId:' + projectId);
+          App.logger.error('there are no tasks for projectId:' + projectId);
           resolve(false);
           return;
         }
@@ -165,7 +166,7 @@ export default {
         resolve(taskIds);
       });
       tasksPromise.catch(() => {
-        console.error('error when trying to get tasks by projectId');
+        App.logger.error('error when trying to get tasks by projectId');
         resolve(false);
       });
     });
@@ -178,13 +179,13 @@ export default {
       timeEntriesPromise.then((theTimeEntriesDocs: ITimeEntryDocument[]) => {
         let durationStr = '';
         if (!theTimeEntriesDocs || theTimeEntriesDocs.length === 0) {
-          console.error('cannot get duration because of missing timeEntry-document');
+          App.logger.error('cannot get duration because of missing timeEntry-document');
           return;
         }
         const singleTimeEntryDoc = theTimeEntriesDocs[0];
 
         // DEBUGGING
-        // console.log(JSON.stringify(singleTimeEntryDoc, null, 4));
+        // App.logger.info(JSON.stringify(singleTimeEntryDoc, null, 4));
 
         durationStr = DurationCalculator.calculateDuration(singleTimeEntryDoc);
         resolve(durationStr);
@@ -203,7 +204,7 @@ export default {
     extendedTimeEntry.startTime = new Date(extendedTimeEntry.startTime) as Date;
 
     // DEBUGGING string or object === date-object?
-    // console.log(typeof (extendedTimeEntry.startTime))
+    // App.logger.info(typeof (extendedTimeEntry.startTime))
 
     return mongoDbOperations.insertOne(extendedTimeEntry, routesConfig.timEntriesCollectionName);
   },
@@ -246,7 +247,7 @@ export default {
       });
       firstPatchPromise.catch(() => {
         const errMsg = 'catch when trying to patch the endDate in a timeEntry:' + theQueryObj[body[routesConfig.httpPatchIdPropertyName]];
-        console.error(errMsg);
+        App.logger.error(errMsg);
         reject(errMsg);
       });
     });
@@ -254,8 +255,8 @@ export default {
   patchTheDurationInTimeEntriesDocument(mongoDbOperations: MonogDbOperations, theSuccessfullyPatchDocumentsFromDB: ITimeEntryDocument[], req: Request): Promise<any> {
     return new Promise<any>((resolve: (value: any) => void, reject: (value: any) => void) => {
       if (!theSuccessfullyPatchDocumentsFromDB || theSuccessfullyPatchDocumentsFromDB.length === 0) {
-        console.error('cannot write the duration because retrieval of document failed');
-        console.error(JSON.stringify(theSuccessfullyPatchDocumentsFromDB, null, 4));
+        App.logger.error('cannot write the duration because retrieval of document failed');
+        App.logger.error(JSON.stringify(theSuccessfullyPatchDocumentsFromDB, null, 4));
         resolve(false);
         return;
       }
@@ -264,18 +265,18 @@ export default {
 
       // DEBUGGING:
       // if (typeof singleDoc.startTime === 'string') {
-      //     console.error('starTime is string and not date!');
+      //     App.logger.error('starTime is string and not date!');
       // }
       // if (typeof singleDoc.endTime === 'string') {
-      //     console.error('endTime is string and  not date');
+      //     App.logger.error('endTime is string and  not date');
       // }
 
       const propertyName = routesConfig.durationProperty;
       const propertyValue = TimeManagement.timeEntryToDuration(singleDoc);
 
       // DEBUGGING:
-      // console.error(JSON.stringify(propertyValue, null, 4));
-      // console.error(JSON.stringify(singleDoc, null, 4));
+      // App.logger.error(JSON.stringify(propertyValue, null, 4));
+      // App.logger.error(JSON.stringify(singleDoc, null, 4));
 
       const theQueryObj = RequestProcessingHelpers.getFilerQuery(req);
 
@@ -314,7 +315,7 @@ export default {
     theQueryObj[routesConfig.bookingDeclarationBookingDeclarationIdProperty] = bookingId;
 
     // DEBUGGING:
-    // console.log(JSON.stringify(theQueryObj, null, 4));
+    // App.logger.info(JSON.stringify(theQueryObj, null, 4));
 
     const promise = mongoDbOperations.getFiltered(routesConfig.bookingDeclarationsCollectionName, theQueryObj);
     return promise;
