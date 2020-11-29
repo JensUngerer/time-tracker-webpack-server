@@ -1,5 +1,5 @@
-import { IRouterMatcher } from "express-serve-static-core";
+import { IRouterMatcher } from 'express-serve-static-core';
 
 export interface IRouter {
-    timeEntry: IRouterMatcher<any>
+  timeEntry: IRouterMatcher<any>;
 }

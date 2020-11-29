@@ -9,28 +9,28 @@ import { UrlHelpers } from '../helpers/urlHelpers';
 const router = express.Router();
 
 const postProject = async (req: Request, res: Response) => {
-    const response = await projectController.post(req, App.mongoDbOperations);
-    const stringifiedResponse = Serialization.serialize(response);
-    res.send(stringifiedResponse);
+  const response = await projectController.post(req, App.mongoDbOperations);
+  const stringifiedResponse = Serialization.serialize(response);
+  res.send(stringifiedResponse);
 };
 
 const getProject = async (req: Request, res: Response) => {
-    const response = await projectController.get(req, App.mongoDbOperations);
-    const stringifiedResponse = Serialization.serialize(response);
-    res.send(stringifiedResponse);
+  const response = await projectController.get(req, App.mongoDbOperations);
+  const stringifiedResponse = Serialization.serialize(response);
+  res.send(stringifiedResponse);
 };
 
 const patchProject = async (req: Request, res: Response) => {
-    const response = await projectController.patch(req, App.mongoDbOperations);
-    const stringifiedResponse = Serialization.serialize(response);
-    res.send(stringifiedResponse);
+  const response = await projectController.patch(req, App.mongoDbOperations);
+  const stringifiedResponse = Serialization.serialize(response);
+  res.send(stringifiedResponse);
 };
 
 const getByTaskIdHandler = async (req: Request, res: Response) => {
-    const taskId = UrlHelpers.getIdFromUlr(req.url);
-    const response = await projectController.getByTaskId(taskId, App.mongoDbOperations);
-    const stringifiedResponse = Serialization.serialize(response);
-    res.send(stringifiedResponse);
+  const taskId = UrlHelpers.getIdFromUlr(req.url);
+  const response = await projectController.getByTaskId(taskId, App.mongoDbOperations);
+  const stringifiedResponse = Serialization.serialize(response);
+  res.send(stringifiedResponse);
 };
 
 const rootRoute = router.route('/');
