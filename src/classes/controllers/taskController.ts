@@ -77,7 +77,7 @@ class TaskController {
 
       // https://stackoverflow.com/questions/10227107/write-to-a-csv-in-node-js/48463225
       const currentTimeStamp = CsvHelper.currentTimeStamp;
-      const fileName = Constants.CONTEXT_BASE_FILE_NAME + currentTimeStamp + '.csv';
+      const fileName = Constants.CONTEXT_BASE_FILE_NAME + '_' + currentTimeStamp + '.csv';
       writeFile(fileName, output, (writeFileErr) => {
         if (writeFileErr) {
           throw writeFileErr;
