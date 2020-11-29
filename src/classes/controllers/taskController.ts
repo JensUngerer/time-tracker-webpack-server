@@ -16,12 +16,6 @@ import { writeFile } from 'fs';
 import { Constants } from './../../../../common/typescript/constants';
 
 class TaskController {
-  static internalConstants: any;
-
-  constructor() {
-    TaskController.internalConstants = Constants;
-  }
-
   static async generateContextLinesFrom(timeEntryDocs: ITimeEntryDocument[], mongoDbOperations: MonogDbOperations): Promise<IContextLine[]> {
     const contextLines: IContextLine[] = [];
     if (!timeEntryDocs || !timeEntryDocs.length) {
@@ -47,9 +41,9 @@ class TaskController {
 
       // csv Data
       try {
-        const durationText = duration.toFormat(TaskController.internalConstants.contextDurationFormat);
-        const day = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(TaskController.internalConstants.contextIsoFormat);
-        const startTime = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(TaskController.internalConstants.contextDurationFormat);
+        const durationText = duration.toFormat(Constants.contextDurationFormat);
+        const day = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(Constants.contextIsoFormat);
+        const startTime = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(Constants.contextDurationFormat);
         const taskNumber = oneCorrespondingTask.number;
         const taskName =  oneCorrespondingTask.name;
 
@@ -81,7 +75,7 @@ class TaskController {
       }
 
       // https://stackoverflow.com/questions/10227107/write-to-a-csv-in-node-js/48463225
-      const fileName = DateTime.fromJSDate(new Date()).toFormat(TaskController.internalConstants.contextCsvFormat) + '.csv';
+      const fileName = DateTime.fromJSDate(new Date()).toFormat(Constants.contextCsvFormat) + '.csv';
       writeFile(fileName, output, (writeFileErr) => {
         if (writeFileErr) {
           throw writeFileErr;
