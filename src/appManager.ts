@@ -1,9 +1,10 @@
 import App, { IApp } from './app';
+import { shutdown } from 'log4js';
 
 export class AppManager {
   static app: IApp;
 
-  static gracefulShutdown: (shutdownMsg: string, isStandalone: boolean) => Promise<any> = (shutdownMsg: string, isStandalone: boolean) => {
+  static gracefulShutdown(shutdownMsg: string, isStandalone: boolean) {
     const disconnectPromise = AppManager.app.closeDataBaseConnection();
     if (isStandalone) {
       disconnectPromise.then(() => {
@@ -12,12 +13,16 @@ export class AppManager {
         shutdownPromise.then(() => {
           App.logger.error(shutdownMsg);
           App.logger.error('process.exit()');
-          process.exit(0);
+          shutdown(() => {
+            process.exit(0);
+          });
         });
         shutdownPromise.catch((err: any) => {
           App.logger.error(err);
           App.logger.error('process.exit()');
-          process.exit(1);
+          shutdown(() => {
+            process.exit(1);
+          });
         });
       });
       disconnectPromise.catch((rejectionReason: any) => {
@@ -30,24 +35,32 @@ export class AppManager {
         shutdownPromise.then(() => {
           App.logger.error(shutdownMsg);
           App.logger.error('process.exit()');
-          process.exit(2);
+          shutdown(() => {
+            process.exit(2);
+          });
         });
         shutdownPromise.catch((err: any) => {
           App.logger.error(err);
           App.logger.error('process.exit()');
-          process.exit(3);
+          shutdown(() => {
+            process.exit(3);
+          });
         });
       });
     } else {
       disconnectPromise.then(() => {
-        process.exit(0);
+        shutdown(() => {
+          process.exit(0);
+        });
       });
       disconnectPromise.then(() => {
-        process.exit(4);
+        shutdown(() => {
+          process.exit(4);
+        });
       });
     }
-    return disconnectPromise;
-  };
+    // return disconnectPromise;
+  }
 
   public static registerAppClosingEvent(app: IApp, isStandalone: boolean) {
     AppManager.app = app;
