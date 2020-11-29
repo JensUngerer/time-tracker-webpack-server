@@ -14,6 +14,7 @@ import { DateTime, Duration } from 'luxon';
 import stringify  from 'csv-stringify';
 import { writeFile } from 'fs';
 import { Constants } from './../../../../common/typescript/constants';
+import { CsvHelper } from '../helpers/csvHelper';
 
 class TaskController {
   static async generateContextLinesFrom(timeEntryDocs: ITimeEntryDocument[], mongoDbOperations: MonogDbOperations): Promise<IContextLine[]> {
@@ -69,13 +70,14 @@ class TaskController {
       }
     }
 
-    stringify(csvData, { delimiter: ';', header: true, columns: columns }, (err, output) => {
+    stringify(csvData, { delimiter: ';', header: false, columns: columns }, (err, output) => {
       if (err) {
         throw err;
       }
 
       // https://stackoverflow.com/questions/10227107/write-to-a-csv-in-node-js/48463225
-      const fileName = DateTime.fromJSDate(new Date()).toFormat(Constants.contextCsvFormat) + '.csv';
+      const currentTimeStamp = CsvHelper.currentTimeStamp;
+      const fileName = Constants.CONTEXT_BASE_FILE_NAME + currentTimeStamp + '.csv';
       writeFile(fileName, output, (writeFileErr) => {
         if (writeFileErr) {
           throw writeFileErr;
