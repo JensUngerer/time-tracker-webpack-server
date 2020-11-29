@@ -13,13 +13,16 @@ import { DurationFormatter } from './../../../../common/typescript/helpers/durat
 import { DateTime, Duration } from 'luxon';
 import stringify  from 'csv-stringify';
 import { writeFile } from 'fs';
+import { Constants } from './../../../../common/typescript/constants';
 
-const contextDurationFormat = 'hh:mm:ss';
-const contextIsoFormat = 'yyyy-MM-dd';
-const contextCsvFormat = 'yyyy-MM-dd_hh-mm-ss';
+class TaskController {
+  static internalConstants: any;
 
-export default {
-  async generateContextLinesFrom(timeEntryDocs: ITimeEntryDocument[], mongoDbOperations: MonogDbOperations): Promise<IContextLine[]> {
+  constructor() {
+    TaskController.internalConstants = Constants;
+  }
+
+  static async generateContextLinesFrom(timeEntryDocs: ITimeEntryDocument[], mongoDbOperations: MonogDbOperations): Promise<IContextLine[]> {
     const contextLines: IContextLine[] = [];
     if (!timeEntryDocs || !timeEntryDocs.length) {
       return [];
@@ -33,7 +36,7 @@ export default {
 
     for (const oneTimeEntryDoc of timeEntryDocs) {
       const taskId = oneTimeEntryDoc._taskId;
-      const correspondingTasks: ITasksDocument[] = await this.getViaTaskId(taskId, mongoDbOperations);
+      const correspondingTasks: ITasksDocument[] = await TaskController.getViaTaskId(taskId, mongoDbOperations);
       if (!correspondingTasks || !correspondingTasks.length) {
         console.error('no corresponding task for:' + taskId);
         continue;
@@ -44,9 +47,9 @@ export default {
 
       // csv Data
       try {
-        const durationText = duration.toFormat(contextDurationFormat);
-        const day = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(contextIsoFormat);
-        const startTime = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(contextDurationFormat);
+        const durationText = duration.toFormat(TaskController.internalConstants.contextDurationFormat);
+        const day = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(TaskController.internalConstants.contextIsoFormat);
+        const startTime = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(TaskController.internalConstants.contextDurationFormat);
         const taskNumber = oneCorrespondingTask.number;
         const taskName =  oneCorrespondingTask.name;
 
@@ -78,7 +81,7 @@ export default {
       }
 
       // https://stackoverflow.com/questions/10227107/write-to-a-csv-in-node-js/48463225
-      const fileName = DateTime.fromJSDate(new Date()).toFormat(contextCsvFormat) + '.csv';
+      const fileName = DateTime.fromJSDate(new Date()).toFormat(TaskController.internalConstants.contextCsvFormat) + '.csv';
       writeFile(fileName, output, (writeFileErr) => {
         if (writeFileErr) {
           throw writeFileErr;
@@ -89,12 +92,12 @@ export default {
     });
 
     return contextLines;
-  },
-  patchDurationSumMap(singleDoc: ITimeEntryDocument, mongoDbOperations: MonogDbOperations) {
+  }
+  static patchDurationSumMap(singleDoc: ITimeEntryDocument, mongoDbOperations: MonogDbOperations) {
     // patchPromiseForWritingTheDuration.then(() => {
     const taskId = singleDoc._taskId;
     const propertyValue = singleDoc.durationInMilliseconds;
-    const taskPromise = this.getViaTaskId(taskId, mongoDbOperations);
+    const taskPromise = TaskController.getViaTaskId(taskId, mongoDbOperations);
     taskPromise.then((taskDocs: ITasksDocument[]) => {
       if (!taskDocs || !taskDocs.length || taskDocs.length > 1) {
         console.error('no or more than one task!');
@@ -118,20 +121,20 @@ export default {
       }
       durationSumInMillisecondsMap[currentDayGetTime] = newSum;
 
-      const innerPatchPromise = this.patchNewDurationSumInMilliseconds(taskId, durationSumInMillisecondsMap, mongoDbOperations);
+      const innerPatchPromise = TaskController.patchNewDurationSumInMilliseconds(taskId, durationSumInMillisecondsMap, mongoDbOperations);
       // innerPatchPromise.then(resolve);
       // innerPatchPromise.catch(resolve);
       return innerPatchPromise;
     });
     // });
-  },
-  patchNewDurationSumInMilliseconds(taskId: string, newSumMap: { [key: number]: number }, mongoDbOperations: MonogDbOperations) {
+  }
+  static patchNewDurationSumInMilliseconds(taskId: string, newSumMap: { [key: number]: number }, mongoDbOperations: MonogDbOperations) {
     const query: FilterQuery<any> = {};
     query[routes.taskIdProperty] = taskId;
 
     return mongoDbOperations.patch(routes.durationSumInMillisecondsPropertyName, newSumMap, routes.tasksCollectionName, query);
-  },
-  getViaTaskId(taskId: string, mongoDbOperations: MonogDbOperations) {
+  }
+  static getViaTaskId(taskId: string, mongoDbOperations: MonogDbOperations) {
     const query: FilterQuery<any> = {};
     query[routes.taskIdProperty] = taskId;
 
@@ -140,15 +143,15 @@ export default {
     // console.log(JSON.stringify(query, null, 4));
 
     return mongoDbOperations.getFiltered(routes.tasksCollectionName, query);
-  },
-  getViaProjectId(projectId: string, mongoDbOperations: MonogDbOperations) {
+  }
+  static getViaProjectId(projectId: string, mongoDbOperations: MonogDbOperations) {
     const filterQuery: FilterQuery<any> = {};
     filterQuery[routes.projectIdPropertyAsForeignKey] = projectId;
     filterQuery[routes.isDisabledProperty] = false;
 
     return mongoDbOperations.getFiltered(routes.tasksCollectionName, filterQuery);
-  },
-  post(req: Request, mongoDbOperations: MonogDbOperations): Promise<any> {
+  }
+  static post(req: Request, mongoDbOperations: MonogDbOperations): Promise<any> {
     const body = Serialization.deSerialize<any>(req.body);
 
     const task: ITask = body[routes.taskBodyProperty];
@@ -157,16 +160,16 @@ export default {
     extendedTask.isDisabled = false;
 
     return mongoDbOperations.insertOne(extendedTask, routes.tasksCollectionName);
-  },
-  get(req: Request, mongoDbOperations: MonogDbOperations, filterQuery?: FilterQuery<any>): Promise<any[]> {
+  }
+  static get(req: Request, mongoDbOperations: MonogDbOperations, filterQuery?: FilterQuery<any>): Promise<any[]> {
     if (!filterQuery) {
       const defaultFilterQuery: FilterQuery<any> = {};
       defaultFilterQuery[routes.isDisabledProperty] = false;
       return mongoDbOperations.getFiltered(routes.tasksCollectionName, defaultFilterQuery);
     }
     return mongoDbOperations.getFiltered(routes.tasksCollectionName, filterQuery);
-  },
-  patch(req: Request, mongoDbOperations: MonogDbOperations): Promise<any> {
+  }
+  static patch(req: Request, mongoDbOperations: MonogDbOperations): Promise<any> {
     const body = Serialization.deSerialize<any>(req.body);
 
     const propertyName = body[routes.httpPatchIdPropertyToUpdateName]; // 'isDeletedInClient';
@@ -180,5 +183,7 @@ export default {
 
     const collectionName = routes.tasksCollectionName;
     return mongoDbOperations.patch(propertyName, propertyValue, collectionName, theQueryObj);
-  },
-};
+  }
+}
+
+export default TaskController;
