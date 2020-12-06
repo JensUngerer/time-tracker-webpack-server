@@ -11,10 +11,11 @@ import { ITimeEntryDocument } from '../../../../common/typescript/mongoDB/iTimeE
 import { IContextLine } from '../../../../common/typescript/iContextLine';
 import { DateTime, Duration } from 'luxon';
 import stringify  from 'csv-stringify';
-import { writeFile } from 'fs';
+import { existsSync, mkdirSync, writeFile } from 'fs';
 import { Constants } from './../../../../common/typescript/constants';
 import { CsvHelper } from '../helpers/csvHelper';
 import App from '../../app';
+import { resolve } from 'path';
 
 class TaskController {
   static async generateContextLinesFrom(timeEntryDocs: ITimeEntryDocument[], mongoDbOperations: MonogDbOperations): Promise<IContextLine[]> {
@@ -70,21 +71,29 @@ class TaskController {
       }
     }
 
+    // creating dir and resolving file name
+    const currentTimeStamp = CsvHelper.currentTimeStamp;
+    const fileName = Constants.CONTEXT_BASE_FILE_NAME + '_' + currentTimeStamp + '.csv';
+    const relativePathToCsvFolder: string = './../../../serverNew/csv';
+    const absolutePathToCsvFolder: string = resolve(App.absolutePathToAppJs, relativePathToCsvFolder);
+    if (!existsSync(absolutePathToCsvFolder)) {
+      mkdirSync(absolutePathToCsvFolder);
+    }
+
+    // writing data to .csv file
     stringify(csvData, { delimiter: ';', header: false, columns: columns }, (err, output) => {
       if (err) {
         throw err;
       }
 
       // https://stackoverflow.com/questions/10227107/write-to-a-csv-in-node-js/48463225
-      const currentTimeStamp = CsvHelper.currentTimeStamp;
-      const fileName = Constants.CONTEXT_BASE_FILE_NAME + '_' + currentTimeStamp + '.csv';
-      writeFile(fileName, output, (writeFileErr) => {
+      const absolutePathToCsvFile = resolve(absolutePathToCsvFolder, fileName);
+      writeFile(absolutePathToCsvFile, output, (writeFileErr) => {
         if (writeFileErr) {
           throw writeFileErr;
         }
-        App.logger.info(fileName);
+        App.logger.info(absolutePathToCsvFile);
       });
-
     });
 
     return contextLines;

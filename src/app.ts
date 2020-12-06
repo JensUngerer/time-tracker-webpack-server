@@ -30,6 +30,7 @@ export class App implements IApp {
   private server: Server;
   public static mongoDbOperations: MonogDbOperations;
   static logger: Logger;
+  static absolutePathToAppJs: string;
 
   public constructor(port: number, hostname: string) {
     const logger = getLogger();
@@ -64,9 +65,8 @@ export class App implements IApp {
   }
 
   public configureExpress(): void {
-    const absolutePathToAppJs = process.argv[1];
     const relativePathToAppJs: string = './../../../client/dist/mtt-client';
-    const pathStr: string = path.resolve(absolutePathToAppJs, relativePathToAppJs);
+    const pathStr: string = path.resolve(App.absolutePathToAppJs, relativePathToAppJs);
 
     this.express.use(express.static(pathStr));
 

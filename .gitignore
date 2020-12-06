@@ -1,3 +1,5 @@
 dist
 node_modules
 .vscode
+/logging/timeTracker.log
+/csv/*.csv
