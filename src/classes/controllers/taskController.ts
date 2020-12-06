@@ -99,8 +99,7 @@ class TaskController {
         App.logger.error('no or more than one task!');
         return;
       }
-      const durationSumInMillisecondsMap: { [dayGetTime: number]: Duration } = {};
-      const mongoDbDurationSumMap = taskDocs[0].durationSumInMillisecondsMap;
+      let mongoDbDurationSumMap = taskDocs[0].durationSumInMillisecondsMap;
 
       const currentDayGetTime = singleDoc.day.getTime();
 
@@ -113,11 +112,12 @@ class TaskController {
         const newDurationSum = currentDurationSumDuration.plus(additionalDurationSum);
         newSum = newDurationSum;
       } else {
-        newSum = /*0 +*/ Duration.fromObject(propertyValue);
+        mongoDbDurationSumMap = {};
+        newSum = Duration.fromObject(propertyValue);
       }
-      durationSumInMillisecondsMap[currentDayGetTime] = newSum;
+      mongoDbDurationSumMap[currentDayGetTime] = newSum.toObject();
 
-      const innerPatchPromise = TaskController.patchNewDurationSumInMilliseconds(taskId, durationSumInMillisecondsMap, mongoDbOperations);
+      const innerPatchPromise = TaskController.patchNewDurationSumInMilliseconds(taskId, mongoDbDurationSumMap, mongoDbOperations);
       // innerPatchPromise.then(resolve);
       // innerPatchPromise.catch(resolve);
       return innerPatchPromise;
