@@ -115,6 +115,7 @@ class TaskController {
         mongoDbDurationSumMap = {};
         newSum = Duration.fromObject(propertyValue);
       }
+      newSum = newSum.shiftTo(...Constants.shiftToParameter);
       mongoDbDurationSumMap[currentDayGetTime] = newSum.toObject();
 
       const innerPatchPromise = TaskController.patchNewDurationSumInMilliseconds(taskId, mongoDbDurationSumMap, mongoDbOperations);

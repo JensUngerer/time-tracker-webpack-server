@@ -13,6 +13,7 @@ import { ITasksDocument } from '../../../../common/typescript/mongoDB/iTasksDocu
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
 import { ITimeInterval } from './../../../../common/typescript/iTimeInterval';
 import App from '../../app';
+import { Constants } from '../../../../common/typescript/constants';
 
 export default {
   getNonCommittedDays(mongoDbOperations: MonogDbOperations, isDisabledProperty: string) {
@@ -272,9 +273,9 @@ export default {
       // }
 
       const propertyName = routesConfig.durationProperty;
-      const propertyValue = TimeManagement.timeEntryToDuration(singleDoc);
+      let propertyValue = TimeManagement.timeEntryToDuration(singleDoc);
+      propertyValue = propertyValue.shiftTo(...Constants.shiftToParameter);
       const propertyValueObj = propertyValue.toObject();
-
       // DEBUGGING:
       // App.logger.error(JSON.stringify(propertyValue, null, 4));
       // App.logger.error(JSON.stringify(singleDoc, null, 4));
