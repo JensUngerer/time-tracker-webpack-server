@@ -9,7 +9,6 @@ import { FilterQuery } from 'mongodb';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
 import { ITimeEntryDocument } from '../../../../common/typescript/mongoDB/iTimeEntryDocument';
 import { IContextLine } from '../../../../common/typescript/iContextLine';
-import { DurationFormatter } from './../../../../common/typescript/helpers/durationFormatter';
 import { DateTime, Duration } from 'luxon';
 import stringify  from 'csv-stringify';
 import { writeFile } from 'fs';
@@ -39,7 +38,7 @@ class TaskController {
       }
       const oneCorrespondingTask: ITasksDocument = correspondingTasks[0];
 
-      const duration = DurationFormatter.convertToDuration(oneTimeEntryDoc.durationInMilliseconds);
+      const duration = Duration.fromObject(oneTimeEntryDoc.durationInMilliseconds);
 
       // csv Data
       try {
@@ -100,21 +99,21 @@ class TaskController {
         App.logger.error('no or more than one task!');
         return;
       }
-      const durationSumInMillisecondsMap: { [dayGetTime: number]: number } = {};
+      const durationSumInMillisecondsMap: { [dayGetTime: number]: Duration } = {};
       const mongoDbDurationSumMap = taskDocs[0].durationSumInMillisecondsMap;
 
       const currentDayGetTime = singleDoc.day.getTime();
 
-      let newSum;
+      let newSum: Duration;
       if (mongoDbDurationSumMap && mongoDbDurationSumMap[currentDayGetTime]) {
         const currentDurationSum = mongoDbDurationSumMap[currentDayGetTime];
 
-        const currentDurationSumDuration = Duration.fromMillis(currentDurationSum);
-        const additionalDurationSum = Duration.fromMillis(propertyValue);
+        const currentDurationSumDuration = Duration.fromObject(currentDurationSum);
+        const additionalDurationSum = Duration.fromObject(propertyValue);
         const newDurationSum = currentDurationSumDuration.plus(additionalDurationSum);
-        newSum = newDurationSum.milliseconds;
+        newSum = newDurationSum;
       } else {
-        newSum = /*0 +*/ propertyValue;
+        newSum = /*0 +*/ Duration.fromObject(propertyValue);
       }
       durationSumInMillisecondsMap[currentDayGetTime] = newSum;
 
@@ -125,7 +124,7 @@ class TaskController {
     });
     // });
   }
-  static patchNewDurationSumInMilliseconds(taskId: string, newSumMap: { [key: number]: number }, mongoDbOperations: MonogDbOperations) {
+  static patchNewDurationSumInMilliseconds(taskId: string, newSumMap: { [key: number]: object }, mongoDbOperations: MonogDbOperations) {
     const query: FilterQuery<any> = {};
     query[routes.taskIdProperty] = taskId;
 

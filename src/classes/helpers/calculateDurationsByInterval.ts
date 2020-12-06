@@ -13,6 +13,7 @@ import { MonogDbOperations } from './mongoDbOperations';
 import { IStatistic } from './../../../../common/typescript/iStatistic';
 import { Constants } from '../../../../common/typescript/constants';
 import { Duration } from 'luxon';
+import { DurationHelper } from './../../../../common/typescript/helpers/durationHelper';
 
 export class CalculateDurationsByInterval {
   static async convertTimeSummaryToSummarizedTasks(input: ISummarizedTimeEntries[], mongoDbOperations: MonogDbOperations) {
@@ -52,12 +53,12 @@ export class CalculateDurationsByInterval {
           taskNumberUrl: baseUrl ? baseUrl + '/' + oneTaskToMerge.number : '',
           taskNumber: oneTaskToMerge.number,
           taskDescription: oneTaskToMerge.name,
-          durationInHours: oneParsedStatistics.durationSumByTaskId[oneTaskToMergeId].milliseconds / Constants.HOURS_IN_MILLISECONDS,
-          durationFraction: oneParsedStatistics.durationSumFractionByTaskId[oneTaskToMergeId].milliseconds,
+          durationInHours: DurationHelper.durationToMillis(oneParsedStatistics.durationSumByTaskId[oneTaskToMergeId]) / Constants.MILLISECONDS_IN_HOUR,
+          durationFraction: DurationHelper.durationToMillis(oneParsedStatistics.durationSumFractionByTaskId[oneTaskToMergeId]),
         };
         lines.push(oneLine);
       }
-      const durationSum = oneParsedStatistics.overallDurationSum.milliseconds / Constants.HOURS_IN_MILLISECONDS;
+      const durationSum = DurationHelper.durationToMillis(oneParsedStatistics.overallDurationSum) / Constants.MILLISECONDS_IN_HOUR;
       const durationFraction = oneParsedStatistics.overallDurationSumFraction;
 
       output.push({
@@ -120,7 +121,7 @@ export class CalculateDurationsByInterval {
       mapByBookingDeclarationId[bookingDeclarationId].push(oneTimeEntry);
     }
 
-    let overallDurationSumInMilliseconds = 0.0;
+    let overallDurationSumInMilliseconds = Duration.fromMillis(0);
     for (const _bookingDeclarationId in mapByBookingDeclarationId) {
       if (Object.prototype.hasOwnProperty.call(mapByBookingDeclarationId, _bookingDeclarationId)) {
         const oneBufferOfTimeEntries = mapByBookingDeclarationId[_bookingDeclarationId];
@@ -129,10 +130,11 @@ export class CalculateDurationsByInterval {
           App.logger.error('empty buffer -> continue');
           continue;
         }
-        let durationInMilliseconds = 0;
+        let durationInMilliseconds = Duration.fromMillis(0);
         for (const oneTimeEntry of oneBufferOfTimeEntries) {
-          durationInMilliseconds += oneTimeEntry.durationInMilliseconds;
-          overallDurationSumInMilliseconds += oneTimeEntry.durationInMilliseconds;
+          const oneDuration = Duration.fromObject(oneTimeEntry.durationInMilliseconds);
+          durationInMilliseconds = durationInMilliseconds.plus(oneDuration);
+          overallDurationSumInMilliseconds = overallDurationSumInMilliseconds.plus(oneDuration);
         }
 
         const bookingsPromise = timeEntriesController.getBooking(_bookingDeclarationId, App.mongoDbOperations);
@@ -146,7 +148,7 @@ export class CalculateDurationsByInterval {
         const oneBookingDoc: IBookingDeclarationsDocument = bookingDocs[0];
         const code = oneBookingDoc.code;
         const description = oneBookingDoc.description;
-        const durationInHours = durationInMilliseconds / Constants.HOURS_IN_MILLISECONDS;
+        const durationInHours = DurationHelper.durationToMillis(durationInMilliseconds) / Constants.MILLISECONDS_IN_HOUR;
 
         outputBuffer.push({
           description: description,
@@ -159,7 +161,7 @@ export class CalculateDurationsByInterval {
         });
       }
     }
-    const overallDurationInHours = overallDurationSumInMilliseconds / Constants.HOURS_IN_MILLISECONDS;
+    const overallDurationInHours = DurationHelper.durationToMillis(overallDurationSumInMilliseconds) / Constants.MILLISECONDS_IN_HOUR;
     const statistics: IStatistic[] = [];
     outputBuffer.forEach((oneTemporaryBufferEntry) => {
       statistics.push({
@@ -184,7 +186,7 @@ export class CalculateDurationsByInterval {
     // DEBUGGING:
     // App.logger.info(JSON.stringify(timeEntriesByCategory, null, 4));
 
-    let durationSumOverAllCategories = 0.0;
+    let durationSumOverAllCategories = Duration.fromMillis(0);
     const timeSummaryMap: ITimeSummary = {};
     if (!groupCategorySelection) {
       App.logger.error('cannot get time entries by group category as groupCategory:' + groupCategorySelection);
@@ -208,10 +210,10 @@ export class CalculateDurationsByInterval {
         // App.logger.info(JSON.stringify(timeEntriesOfOneCategory));
 
         const oneTimeEntryIds: string[] = [];
-        let oneOverallSum = 0.0;
+        let oneOverallSum = Duration.fromMillis(0);
         for (const oneTimeEntry of timeEntriesOfOneCategory) {
-          const oneDuration = oneTimeEntry.durationInMilliseconds;
-          const singleDuration = Duration.fromMillis(oneTimeEntry.durationInMilliseconds);
+          // const oneDuration = oneTimeEntry.durationInMilliseconds;
+          const singleDuration = Duration.fromObject(oneTimeEntry.durationInMilliseconds);
           const taskId = oneTimeEntry._taskId;
 
           // necessary: the timeEntries could be disabled by either booking or commit...
@@ -220,19 +222,19 @@ export class CalculateDurationsByInterval {
           }
           durationSumByTaskIdMap[taskCategory][taskId] = durationSumByTaskIdMap[taskCategory][taskId].plus(singleDuration);
 
-          oneOverallSum += oneDuration;
+          oneOverallSum = oneOverallSum.plus(singleDuration);
           oneTimeEntryIds.push(oneTimeEntry.timeEntryId);
         }
 
         timeSummaryMap[taskCategory] = {
           taskCategory: taskCategory,
-          overallDurationSum: Duration.fromMillis(oneOverallSum),
+          overallDurationSum: oneOverallSum,
           overallDurationSumFraction: 0.0,
           _timeEntryIds: oneTimeEntryIds,
           durationSumByTaskId: durationSumByTaskIdMap[taskCategory],
           durationSumFractionByTaskId: durationSumFractionByTaskIdMap[taskCategory],
         };
-        durationSumOverAllCategories += oneOverallSum;
+        durationSumOverAllCategories = durationSumOverAllCategories.plus(oneOverallSum);
       }
     }
 
@@ -241,7 +243,7 @@ export class CalculateDurationsByInterval {
         for (const taskId in durationSumByTaskIdMap[taskCategory]) {
           if (Object.prototype.hasOwnProperty.call(durationSumByTaskIdMap[taskCategory], taskId)) {
             const absolutedurationSumByTaskId = durationSumByTaskIdMap[taskCategory][taskId];
-            durationSumFractionByTaskIdMap[taskCategory][taskId] = Duration.fromMillis(absolutedurationSumByTaskId.milliseconds / durationSumOverAllCategories);
+            durationSumFractionByTaskIdMap[taskCategory][taskId] = Duration.fromMillis(DurationHelper.durationToMillis(absolutedurationSumByTaskId) / DurationHelper.durationToMillis(durationSumOverAllCategories));
 
             // convert to hours:
             // durationSumByTaskIdMap[taskCategory][taskId] = absolutedurationSumByTaskId;
@@ -255,7 +257,7 @@ export class CalculateDurationsByInterval {
     for (const oneTaskCat in timeSummaryMap) {
       if (Object.prototype.hasOwnProperty.call(timeSummaryMap, oneTaskCat)) {
         const sumEntry = timeSummaryMap[oneTaskCat];
-        sumEntry.overallDurationSumFraction = sumEntry.overallDurationSum.milliseconds / durationSumOverAllCategories;
+        sumEntry.overallDurationSumFraction = DurationHelper.durationToMillis(sumEntry.overallDurationSum) / DurationHelper.durationToMillis(durationSumOverAllCategories);
 
         // convert to hours:
         // timeSummaryMap[oneTaskCat].overallDurationSum = timeSummaryMap[oneTaskCat].overallDurationSum / Constants.HOURS_IN_MILLISECONDS;

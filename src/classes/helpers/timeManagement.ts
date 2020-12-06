@@ -8,18 +8,19 @@ export class TimeManagement {
     return milliseconds;
   }
 
-  public static getTimeDifferenceInMilliseconds(endTime: Date, startTime: Date): number {
+  public static getTimeDifferenceInMilliseconds(endTime: Date, startTime: Date): Duration {
     const luxonEndTime = DateTime.fromJSDate(endTime);
     const luxonStartTime = DateTime.fromJSDate(startTime);
     const difference: Duration = luxonEndTime.diff(luxonStartTime);
-    const theDuration = difference.milliseconds;
-    return theDuration;
+    // const theDuration = difference.milliseconds;
+    // return theDuration;
+    return difference;
   }
 
-  public static calculateTimeDifferenceWithoutPauses(timeEntry: ITimeEntryDocument): number {
+  public static calculateTimeDifferenceWithoutPauses(timeEntry: ITimeEntryDocument): Duration {
     if (!timeEntry) {
       App.logger.error('cannot calculate duration for:' + JSON.stringify(timeEntry, null, 4));
-      return 0;
+      return Duration.fromMillis(0);
     }
 
     const trackedDurationInMilliseconds = TimeManagement.getTimeDifferenceInMilliseconds(timeEntry.endTime, timeEntry.startTime);

@@ -273,6 +273,7 @@ export default {
 
       const propertyName = routesConfig.durationProperty;
       const propertyValue = TimeManagement.timeEntryToDuration(singleDoc);
+      const propertyValueObj = propertyValue.toObject();
 
       // DEBUGGING:
       // App.logger.error(JSON.stringify(propertyValue, null, 4));
@@ -280,7 +281,7 @@ export default {
 
       const theQueryObj = RequestProcessingHelpers.getFilerQuery(req);
 
-      const patchPromiseForWritingTheDuration = mongoDbOperations.patch(propertyName, propertyValue, routesConfig.timEntriesCollectionName, theQueryObj);
+      const patchPromiseForWritingTheDuration = mongoDbOperations.patch(propertyName, propertyValueObj, routesConfig.timEntriesCollectionName, theQueryObj);
       patchPromiseForWritingTheDuration.then(resolve);
       patchPromiseForWritingTheDuration.catch(resolve);
     });
