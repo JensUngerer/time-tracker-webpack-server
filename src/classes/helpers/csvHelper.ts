@@ -30,34 +30,47 @@ export class CsvHelper {
   }
 
   static async write(timeEntryDocsByInterval: ITimeEntryDocument[]) {
+    const columns = [{ key: 'day' }, { key: 'startTime' }, { key: 'durationText' }, {key: 'durationSuffix'}, { key: 'taskNumber' }, { key: 'taskName' }, {key: 'isDisabledInCommit'}, {key: 'isDisabledInBooking'}];
     const csvData: any[] = [];
+    let timeEntryDocsByIntervalIndex: number = -1;
     for (const oneTimeEntryDoc of timeEntryDocsByInterval) {
-      const oneCorrespondingTask: ITasksDocument | null = await TaskController.getCorresponding(oneTimeEntryDoc, App.mongoDbOperations);
+      timeEntryDocsByIntervalIndex++;
       if (!oneTimeEntryDoc || oneTimeEntryDoc === null) {
+        App.logger.error('oneTimeEntryDoc as index:' + timeEntryDocsByIntervalIndex);
+        continue;
+      }
+      const oneCorrespondingTask: ITasksDocument | null = await TaskController.getCorresponding(oneTimeEntryDoc, App.mongoDbOperations);
+      if (!oneCorrespondingTask) {
+        App.logger.error('no corresponding task for:' + JSON.stringify(oneTimeEntryDoc, null, 4));
         continue;
       }
 
       const duration = Duration.fromObject(oneTimeEntryDoc.durationInMilliseconds);
       const durationText = duration.toFormat(Constants.contextDurationFormat);
+      const durationSuffix = duration.milliseconds.toString();
       const day = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(Constants.contextIsoFormat);
       const startTime = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(Constants.contextDurationFormat);
       const taskNumber = (oneCorrespondingTask as ITasksDocument).number;
       const taskName = (oneCorrespondingTask as ITasksDocument).name;
+      const isDisabledInCommit = oneTimeEntryDoc.isDisabledInCommit.toString();
+      const isDisabledInBooking = oneTimeEntryDoc.isDisabledInBooking.toString();
 
       csvData.push({
         durationText,
+        durationSuffix,
         day,
         startTime,
         taskNumber,
         taskName,
+        isDisabledInCommit,
+        isDisabledInBooking,
       });
     }
 
-    const columns = [{ key: 'day' }, { key: 'startTime' }, { key: 'durationText' }, { key: 'taskNumber' }, { key: 'taskName' }];
     const absolutePathToCsvFile = CsvHelper.createDir();
     return new Promise<any>((resolve: (value?: any) => void) => {
       // writing data to .csv file
-      stringify(csvData, { delimiter: ';', header: false, columns: columns }, (err, output) => {
+      stringify(csvData, { delimiter: ';', header: true, columns: columns }, (err, output) => {
         if (err) {
           resolve(false);
           throw err;
