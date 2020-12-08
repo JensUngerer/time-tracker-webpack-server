@@ -9,53 +9,40 @@ import { FilterQuery } from 'mongodb';
 import { Serialization } from '../../../../common/typescript/helpers/serialization';
 import { ITimeEntryDocument } from '../../../../common/typescript/mongoDB/iTimeEntryDocument';
 import { IContextLine } from '../../../../common/typescript/iContextLine';
-import { DateTime, Duration } from 'luxon';
-import stringify  from 'csv-stringify';
-import { existsSync, mkdirSync, writeFile } from 'fs';
+import { Duration } from 'luxon';
 import { Constants } from './../../../../common/typescript/constants';
-import { CsvHelper } from '../helpers/csvHelper';
 import App from '../../app';
-import { resolve } from 'path';
 
 class TaskController {
+  static async getCorresponding(oneTimeEntryDoc: ITimeEntryDocument, mongoDbOperations: MonogDbOperations) {
+    const taskId = oneTimeEntryDoc._taskId;
+    const correspondingTasks: ITasksDocument[] = await TaskController.getViaTaskId(taskId, mongoDbOperations);
+    if (!correspondingTasks || !correspondingTasks.length) {
+      App.logger.error('no corresponding task for:' + taskId);
+      return null;
+    }
+    const oneCorrespondingTask: ITasksDocument = correspondingTasks[0];
+    return oneCorrespondingTask;
+  }
+
   static async generateContextLinesFrom(timeEntryDocs: ITimeEntryDocument[], mongoDbOperations: MonogDbOperations): Promise<IContextLine[]> {
     const contextLines: IContextLine[] = [];
     if (!timeEntryDocs || !timeEntryDocs.length) {
       return [];
     }
-    // const stringify = new Stringifier({
-    //   columns: ,
-    //   delimiter: ',',
-    // });
-    const columns = [{key:'day'}, {key: 'startTime'}, {key: 'durationText'}, {key:'taskNumber'}, {key: 'taskName'}];
-    const csvData = [];
 
     for (const oneTimeEntryDoc of timeEntryDocs) {
-      const taskId = oneTimeEntryDoc._taskId;
-      const correspondingTasks: ITasksDocument[] = await TaskController.getViaTaskId(taskId, mongoDbOperations);
-      if (!correspondingTasks || !correspondingTasks.length) {
-        App.logger.error('no corresponding task for:' + taskId);
+      const oneCorrespondingTask: ITasksDocument | null = await TaskController.getCorresponding(oneTimeEntryDoc, App.mongoDbOperations);
+      if (!oneTimeEntryDoc || oneTimeEntryDoc === null) {
         continue;
       }
-      const oneCorrespondingTask: ITasksDocument = correspondingTasks[0];
-
-      const duration = Duration.fromObject(oneTimeEntryDoc.durationInMilliseconds);
 
       // csv Data
       try {
+        const duration = Duration.fromObject(oneTimeEntryDoc.durationInMilliseconds);
         const durationText = duration.toFormat(Constants.contextDurationFormat);
-        const day = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(Constants.contextIsoFormat);
-        const startTime = DateTime.fromJSDate(oneTimeEntryDoc.startTime).toFormat(Constants.contextDurationFormat);
-        const taskNumber = oneCorrespondingTask.number;
-        const taskName =  oneCorrespondingTask.name;
-
-        csvData.push({
-          durationText,
-          day,
-          startTime,
-          taskNumber,
-          taskName,
-        });
+        const taskNumber = (oneCorrespondingTask as ITasksDocument).number;
+        const taskName =  (oneCorrespondingTask as ITasksDocument).name;
 
         contextLines.push({
           duration: durationText,
@@ -70,31 +57,6 @@ class TaskController {
         App.logger.info(e);
       }
     }
-
-    // creating dir and resolving file name
-    const currentTimeStamp = CsvHelper.currentTimeStamp;
-    const fileName = Constants.CONTEXT_BASE_FILE_NAME + '_' + currentTimeStamp + '.csv';
-    const relativePathToCsvFolder: string = './../../../serverNew/csv';
-    const absolutePathToCsvFolder: string = resolve(App.absolutePathToAppJs, relativePathToCsvFolder);
-    if (!existsSync(absolutePathToCsvFolder)) {
-      mkdirSync(absolutePathToCsvFolder);
-    }
-
-    // writing data to .csv file
-    stringify(csvData, { delimiter: ';', header: false, columns: columns }, (err, output) => {
-      if (err) {
-        throw err;
-      }
-
-      // https://stackoverflow.com/questions/10227107/write-to-a-csv-in-node-js/48463225
-      const absolutePathToCsvFile = resolve(absolutePathToCsvFolder, fileName);
-      writeFile(absolutePathToCsvFile, output, (writeFileErr) => {
-        if (writeFileErr) {
-          throw writeFileErr;
-        }
-        App.logger.info(absolutePathToCsvFile);
-      });
-    });
 
     return contextLines;
   }

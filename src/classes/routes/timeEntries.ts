@@ -249,13 +249,14 @@ const getTimeInterval = async (req: Request, res: Response)  => {
     res.send('');
     return;
   }
-  const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTimeUtc, endTimeUtc);
+  const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTimeUtc, endTimeUtc, undefined, undefined, true);
   if (!timeEntryDocsByInterval || !timeEntryDocsByInterval.length) {
     App.logger.error('no time entries found');
     res.send([]);
     return;
   }
   const contextLines: IContextLine[] = await taskController.generateContextLinesFrom(timeEntryDocsByInterval, App.mongoDbOperations);
+
   const serialized = Serialization.serialize(contextLines);
   res.send(serialized);
 };

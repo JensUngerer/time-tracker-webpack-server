@@ -14,6 +14,7 @@ import { Serialization } from '../../../../common/typescript/helpers/serializati
 import { ITimeInterval } from './../../../../common/typescript/iTimeInterval';
 import App from '../../app';
 import { Constants } from '../../../../common/typescript/constants';
+import { CsvHelper } from '../helpers/csvHelper';
 
 export default {
   getNonCommittedDays(mongoDbOperations: MonogDbOperations, isDisabledProperty: string) {
@@ -66,7 +67,7 @@ export default {
       });
     });
   },
-  getDurationsByInterval(mongoDbOperations: MonogDbOperations, startTimeUtc: Date, endTimeUtc: Date, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean) {
+  getDurationsByInterval(mongoDbOperations: MonogDbOperations, startTimeUtc: Date, endTimeUtc: Date, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean, isCsvFileWritten?: boolean) {
     const theQueryObj: FilterQuery<any> = {};
 
     // https://stackoverflow.com/questions/21286599/inserting-and-querying-date-with-mongodb-and-nodejs/21286896#21286896
@@ -95,6 +96,13 @@ export default {
     // App.logger.info(JSON.stringify(theQueryObj, null, 4));
 
     const promise = mongoDbOperations.getFiltered(routesConfig.timEntriesCollectionName, theQueryObj);
+
+    promise.then((timeEntryDocsByInterval: ITimeEntryDocument[]) => {
+      if (isCsvFileWritten) {
+        CsvHelper.write(timeEntryDocsByInterval);
+      }
+    });
+
     return promise;
   },
   getRunning(mongoDbOperations: MonogDbOperations) {

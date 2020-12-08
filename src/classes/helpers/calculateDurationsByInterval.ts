@@ -276,7 +276,7 @@ export class CalculateDurationsByInterval {
       // App.logger.info(startTime.toUTCString());
       // App.logger.info(endTime.toUTCString());
 
-      const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTime, endTime, isDisabledPropertyName, isDisabledPropertyValue);
+      const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTime, endTime, isDisabledPropertyName, isDisabledPropertyValue, true);
       if (!timeEntryDocsByInterval || !timeEntryDocsByInterval.length) {
         App.logger.error('no time entries to calculate duration from');
         return null;
