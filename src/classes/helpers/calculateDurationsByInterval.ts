@@ -270,13 +270,13 @@ export class CalculateDurationsByInterval {
     return timeSummaryMap;
   }
 
-  static async calculate(startTime: Date, endTime: Date, isBookingBased: boolean, groupCategory: string | null, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean) {
+  static async calculate(startTime: Date, endTime: Date, isBookingBased: boolean, groupCategory: string | null, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean, isCsvFileWritten?: boolean) {
     try {
       // DEBUGGING:
       // App.logger.info(startTime.toUTCString());
       // App.logger.info(endTime.toUTCString());
 
-      const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTime, endTime, isDisabledPropertyName, isDisabledPropertyValue, true);
+      const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTime, endTime, isDisabledPropertyName, isDisabledPropertyValue, isCsvFileWritten);
       if (!timeEntryDocsByInterval || !timeEntryDocsByInterval.length) {
         App.logger.error('no time entries to calculate duration from');
         return null;

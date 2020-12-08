@@ -66,4 +66,12 @@ export class UrlHelpers {
 
     return new Date(parseFloat(propertyValue));
   }
+
+  static getBooleanProperty(rawUrl: string, propertyName: string): boolean {
+    const propertyValue = UrlHelpers.getProperty(rawUrl, propertyName);
+    if (propertyValue === null) {
+      return false;
+    }
+    return JSON.parse(propertyValue);
+  }
 }

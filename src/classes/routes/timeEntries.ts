@@ -244,12 +244,14 @@ const getTimeInterval = async (req: Request, res: Response)  => {
 
   const startTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.startTimeProperty);
   const endTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.endDateProperty);
+  const isCsvFileWritten: boolean = UrlHelpers.getBooleanProperty(req.url, routesConfig.isCsvFileWrittenProperty);
+
   if (!startTimeUtc || !endTimeUtc) {
     App.logger.error('not utc - start- or end-time');
     res.send('');
     return;
   }
-  const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTimeUtc, endTimeUtc, undefined, undefined, true);
+  const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTimeUtc, endTimeUtc, undefined, undefined, isCsvFileWritten);
   if (!timeEntryDocsByInterval || !timeEntryDocsByInterval.length) {
     App.logger.error('no time entries found');
     res.send([]);
@@ -266,6 +268,7 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
   const isBookingBased = JSON.parse(isRawBookingBased as string);
   const isTakenCareIsDisabledRaw = UrlHelpers.getProperty(req.url, routesConfig.isTakenCareIsDisabledPropertyName);
   const isTakenCareIsDisabled = JSON.parse(isTakenCareIsDisabledRaw as string);
+  const isCsvFileWritten: boolean = UrlHelpers.getBooleanProperty(req.url, routesConfig.isCsvFileWrittenProperty);
   // DEBUGGING:
   // App.logger.info(isBookingBased);
 
@@ -291,12 +294,12 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
   try {
     let oneSummary: ITimeSummary;
     if (!isTakenCareIsDisabled) {
-      oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory);
+      oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, undefined, undefined, isCsvFileWritten);
     } else {
       if (isBookingBased) {
-        oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDeletedInClientProperty, false);
+        oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDeletedInClientProperty, false, isCsvFileWritten);
       } else {
-        oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDisabledInCommit, false);
+        oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDisabledInCommit, false, isCsvFileWritten);
       }
     }
     if (!oneSummary) {

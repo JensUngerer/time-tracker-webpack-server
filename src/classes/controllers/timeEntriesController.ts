@@ -35,7 +35,8 @@ export default {
         timeEntryDocs.forEach((oneTimeEntry: ITimeEntryDocument) => {
           const utcStartTime = DurationCalculator.getDayFrom(oneTimeEntry.startTime);
           const utcEndTime = DurationCalculator.getLatestDayFrom(oneTimeEntry.startTime);
-          const valueToBeStored = { utcStartTime, utcEndTime };
+          const isCsvFileWritten = false;
+          const valueToBeStored = { utcStartTime, utcEndTime, isCsvFileWritten };
           const startTimeTime = utcStartTime.getTime();
           if (!daysByStartTime[startTimeTime]) {
             daysByStartTime[startTimeTime] = valueToBeStored;
