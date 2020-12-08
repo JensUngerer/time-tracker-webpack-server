@@ -250,7 +250,7 @@ const getTimeInterval = async (req: Request, res: Response)  => {
     res.send('');
     return;
   }
-  const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTimeUtc, endTimeUtc, undefined, undefined);
+  const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTimeUtc, endTimeUtc);
   if (!timeEntryDocsByInterval || !timeEntryDocsByInterval.length) {
     App.logger.error('no time entries found');
     res.send([]);
@@ -292,7 +292,7 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
   try {
     let oneSummary: ITimeSummary;
     if (!isTakenCareIsDisabled) {
-      oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, undefined, undefined);
+      oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory);
     } else {
       if (isBookingBased) {
         oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDeletedInClientProperty, false);

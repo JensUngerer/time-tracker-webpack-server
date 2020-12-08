@@ -32,8 +32,11 @@ class TaskController {
     }
 
     for (const oneTimeEntryDoc of timeEntryDocs) {
-      const oneCorrespondingTask: ITasksDocument | null = await TaskController.getCorresponding(oneTimeEntryDoc, App.mongoDbOperations);
       if (!oneTimeEntryDoc || oneTimeEntryDoc === null) {
+        continue;
+      }
+      const oneCorrespondingTask: ITasksDocument | null = await TaskController.getCorresponding(oneTimeEntryDoc, App.mongoDbOperations);
+      if (!oneCorrespondingTask) {
         continue;
       }
 
