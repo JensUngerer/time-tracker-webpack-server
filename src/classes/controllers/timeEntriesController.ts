@@ -17,6 +17,9 @@ import { Constants } from '../../../../common/typescript/constants';
 import { CsvHelper } from '../helpers/csvHelper';
 
 export default {
+  postCsvWrite(timeEntries: ITimeEntryDocument[]) {
+    return CsvHelper.write(timeEntries);
+  },
   getNonCommittedDays(mongoDbOperations: MonogDbOperations, isDisabledProperty: string) {
     const daysByStartTime: { [startDateTime: number]: ITimeInterval } = {};
     return new Promise((resolve: (value?: any) => void) => {
@@ -35,8 +38,7 @@ export default {
         timeEntryDocs.forEach((oneTimeEntry: ITimeEntryDocument) => {
           const utcStartTime = DurationCalculator.getDayFrom(oneTimeEntry.startTime);
           const utcEndTime = DurationCalculator.getLatestDayFrom(oneTimeEntry.startTime);
-          const isCsvFileWritten = false;
-          const valueToBeStored = { utcStartTime, utcEndTime, isCsvFileWritten };
+          const valueToBeStored = { utcStartTime, utcEndTime };
           const startTimeTime = utcStartTime.getTime();
           if (!daysByStartTime[startTimeTime]) {
             daysByStartTime[startTimeTime] = valueToBeStored;
@@ -68,7 +70,7 @@ export default {
       });
     });
   },
-  getDurationsByInterval(mongoDbOperations: MonogDbOperations, startTimeUtc: Date, endTimeUtc: Date, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean, isCsvFileWritten?: boolean) {
+  getDurationsByInterval(mongoDbOperations: MonogDbOperations, startTimeUtc: Date, endTimeUtc: Date, isDisabledPropertyName?: string, isDisabledPropertyValue?: boolean) {
     const theQueryObj: FilterQuery<any> = {};
 
     // https://stackoverflow.com/questions/21286599/inserting-and-querying-date-with-mongodb-and-nodejs/21286896#21286896
@@ -97,12 +99,6 @@ export default {
     // App.logger.info(JSON.stringify(theQueryObj, null, 4));
 
     const promise = mongoDbOperations.getFiltered(routesConfig.timEntriesCollectionName, theQueryObj);
-
-    promise.then((timeEntryDocsByInterval: ITimeEntryDocument[]) => {
-      if (isCsvFileWritten) {
-        CsvHelper.write(timeEntryDocsByInterval);
-      }
-    });
 
     return promise;
   },

@@ -244,14 +244,13 @@ const getTimeInterval = async (req: Request, res: Response)  => {
 
   const startTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.startTimeProperty);
   const endTimeUtc = UrlHelpers.getDateObjFromUrl(req.url, routesConfig.endDateProperty);
-  const isCsvFileWritten: boolean = UrlHelpers.getBooleanProperty(req.url, routesConfig.isCsvFileWrittenProperty);
 
   if (!startTimeUtc || !endTimeUtc) {
     App.logger.error('not utc - start- or end-time');
     res.send('');
     return;
   }
-  const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTimeUtc, endTimeUtc, undefined, undefined, isCsvFileWritten);
+  const timeEntryDocsByInterval: ITimeEntryDocument[] = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, startTimeUtc, endTimeUtc, undefined, undefined);
   if (!timeEntryDocsByInterval || !timeEntryDocsByInterval.length) {
     App.logger.error('no time entries found');
     res.send([]);
@@ -268,7 +267,6 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
   const isBookingBased = JSON.parse(isRawBookingBased as string);
   const isTakenCareIsDisabledRaw = UrlHelpers.getProperty(req.url, routesConfig.isTakenCareIsDisabledPropertyName);
   const isTakenCareIsDisabled = JSON.parse(isTakenCareIsDisabledRaw as string);
-  const isCsvFileWritten: boolean = UrlHelpers.getBooleanProperty(req.url, routesConfig.isCsvFileWrittenProperty);
   // DEBUGGING:
   // App.logger.info(isBookingBased);
 
@@ -294,12 +292,12 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
   try {
     let oneSummary: ITimeSummary;
     if (!isTakenCareIsDisabled) {
-      oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, undefined, undefined, isCsvFileWritten);
+      oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, undefined, undefined);
     } else {
       if (isBookingBased) {
-        oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDeletedInClientProperty, false, isCsvFileWritten);
+        oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDeletedInClientProperty, false);
       } else {
-        oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDisabledInCommit, false, isCsvFileWritten);
+        oneSummary = await CalculateDurationsByInterval.calculate(startTimeUtc, endTimeUtc, isBookingBased, groupCategory, routesConfig.isDisabledInCommit, false);
       }
     }
     if (!oneSummary) {
@@ -343,9 +341,29 @@ const getStatisticsHandler = async (req: Request, res: Response) => {
   }
 };
 
+const postCsvWrite = async (req: Request, res: Response) => {
+  const body = Serialization.deSerialize<any>(req.body);
+  const bodyData: any = body[routesConfig.isCsvWrittenTriggerPropertyName];
+  const isCsvWritten: boolean = bodyData[routesConfig.isCsvFileWrittenProperty];
+  if (!isCsvWritten) {
+    return;
+  }
+  const utcStartTime = bodyData[routesConfig.startTimeProperty];
+  const utcEndTime = bodyData[routesConfig.endDateProperty];
+  // TODO: this data must be cached and re-used instead of re-fetched!!!
+  const timeEntries = await timeEntriesController.getDurationsByInterval(App.mongoDbOperations, utcStartTime, utcEndTime);
+
+  const response = await timeEntriesController.postCsvWrite(timeEntries);
+  const stringifiedResponse = Serialization.serialize(response);
+  res.send(stringifiedResponse);
+};
+
 const rootRoute = router.route('/');
 rootRoute.get(getTimeEntries);
 rootRoute.post(postTimeEntries);
+
+const csvWriteRoute = router.route(routesConfig.postCsvFileTriggerSuffix);
+csvWriteRoute.post(postCsvWrite);
 
 const stopRoute = router.route(routesConfig.timeEntriesStopPathSuffix);
 stopRoute.patch(patchTimeEntriesStop);
