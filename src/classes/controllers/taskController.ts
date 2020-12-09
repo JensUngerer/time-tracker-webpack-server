@@ -78,7 +78,10 @@ class TaskController {
       const currentDayGetTime = singleDoc.day.getTime();
 
       let newSum: Duration;
-      if (mongoDbDurationSumMap && mongoDbDurationSumMap[currentDayGetTime]) {
+      if (!mongoDbDurationSumMap) {
+        mongoDbDurationSumMap = {};
+      }
+      if (mongoDbDurationSumMap[currentDayGetTime]) {
         const currentDurationSum = mongoDbDurationSumMap[currentDayGetTime];
 
         const currentDurationSumDuration = Duration.fromObject(currentDurationSum);
@@ -86,7 +89,6 @@ class TaskController {
         const newDurationSum = currentDurationSumDuration.plus(additionalDurationSum);
         newSum = newDurationSum;
       } else {
-        mongoDbDurationSumMap = {};
         newSum = Duration.fromObject(propertyValue);
       }
       newSum = newSum.shiftTo(...Constants.shiftToParameter);
