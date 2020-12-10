@@ -3,3 +3,5 @@ node_modules
 .vscode
 /logging/timeTracker.log
 /csv/*.csv
+/csv/*.xls
+/csv/*.xlsx
