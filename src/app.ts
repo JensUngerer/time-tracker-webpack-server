@@ -1,4 +1,4 @@
-import { Application, Response, Request } from 'express';
+import { Application, Response, Request, NextFunction } from 'express';
 import { Server } from 'http';
 import express from 'express';
 import bodyParser from 'body-parser';
@@ -15,6 +15,12 @@ import projectRoute from './classes/routes//projectRoute';
 import timeEntries from './classes/routes//timeEntries';
 import bookingDeclarationRoute from './classes/routes//bookingDeclarationRoute';
 import { getLogger, Logger } from 'log4js';
+import mongoose, { Connection, Document, Model, } from 'mongoose';
+import { Strategy } from 'passport-local';
+import session from 'express-session';
+
+// const MongoStore = connectMongo(session);
+// const LocalStrategy = passportLocal.Strategy;
 
 export interface IApp {
   configure(): void;
@@ -25,14 +31,34 @@ export interface IApp {
   closeDataBaseConnection(): Promise<void>;
 }
 
+
+// @ts-ignore
+import { ensureAuthenticated } from 'connect-ensure-authenticated';
+import passport from 'passport';
+import MongoStore from 'connect-mongo';
+
+interface IUser extends Document<any> {
+  username: string;
+  hash: string;
+}
+
 export class App implements IApp {
+  //   private readonly UserSchema: Schema = new mongoose.Schema({
+  //     username: String,
+  //     hash: String
+  // });
+
   private express: Application;
   private server: Server;
   public static mongoDbOperations: MonogDbOperations;
   static logger: Logger;
   static absolutePathToAppJs: string;
 
+  private User: Model<IUser>;
+  private sessionStore: MongoStore;
+
   public constructor(port: number, hostname: string) {
+    // setup logging
     const logger = getLogger();
     logger.level = 'debug';
     App.logger = logger;
@@ -41,6 +67,72 @@ export class App implements IApp {
     this.server = this.express.listen(port, hostname, () => {
       App.logger.info('successfully started on: ' + hostname + ':' + port);
     });
+
+    // set up express-session
+    const completeDataBaseString = routesConfig.url + '/' + routesConfig.sessionsDataBaseName;
+    const mogooseConnection: Connection = mongoose.createConnection(completeDataBaseString, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      // user: process.env.USER as string,
+      // pass: process.env.PW as string
+    });
+    const UserSchema = new mongoose.Schema<IUser>({
+      username: String,
+      hash: String
+    });
+    this.User = mogooseConnection.model<IUser>('User', UserSchema);
+
+    this.localStrategyHandler = new Strategy(
+      (username, password, cb) => {
+        this.User.findOne({ username: username })
+          .then((user: IUser | null) => {
+
+            if (!user) { return cb(null, false) }
+
+            const isValid = this.validPassword(password, user.hash);
+
+            if (isValid) {
+              return cb(null, user);
+            } else {
+              return cb(null, false);
+            }
+          })
+          .catch((err: any) => {
+            cb(err);
+          });
+      }
+    );
+    const client = mogooseConnection.getClient();
+    // { collectionName: routesConfig.sessionsCollectionName, mongoUrl: completeDataBaseString }
+    this.sessionStore = new MongoStore({ clientPromise: Promise.resolve(client) });
+    // this.sessionStore.
+    /**
+     *  mongoUrl?: string;
+    clientPromise?: Promise<MongoClient>;
+    collectionName?: string;
+    mongoOptions?: MongoClientOptions;
+    dbName?: string;
+    ttl?: number;
+    touchAfter?: number;
+    stringify?: boolean;
+    createAutoRemoveIdx?: boolean;
+    autoRemove?: 'native' | 'interval' | 'disabled';
+    autoRemoveInterval?: number;
+    serialize?: (a: any) => any;
+    unserialize?: (a: any) => any;
+    writeOperationOptions?: CommonOptions;
+    transformId?: (a: any) => any;
+    crypto?: CryptoOptions;
+     */
+    // const options: ConnectionMongoOptions = {
+    //   // mongoUrl: completeDataBaseString,
+    //   clientP: 
+
+    // };
+    // // { collectionName, ttl, mongoOptions, autoRemove, autoRemoveInterval, touchAfter, stringify, crypto, ...required }: ConnectMongoOptions
+    // // { mongooseConnection: options, collection: process.env.DATA_BASE_SESSIONS_COLLECTION_NAME }
+    // const sessionStore = new MongoStore(options)
+
   }
 
   public setupDatabaseConnection() {
@@ -56,12 +148,62 @@ export class App implements IApp {
     return Promise.reject();
   }
 
+  private validPassword(passwordHash: string, hash: string) {
+    return hash === passwordHash;
+  }
+
+  private localStrategyHandler: Strategy;
+
+  private serializeUserHandler(user: Express.User, done: (err: any, id?: any) => void) {
+    // console.log(JSON.stringify(user, null, 4));
+    done(null, (user as any)._id);
+  }
+
+  private deserializeUser(id: any, done: (err: any, user?: Express.User) => void) {
+    this.User.findById(id, (err: any, user: Express.User) => {
+      if (err) { return done(err); }
+      done(null, user);
+    });
+  }
+
   public configure(): void {
     // https://stackoverflow.com/questions/12345166/how-to-force-parse-request-body-as-plain-text-instead-of-json-in-express
     this.express.use(bodyParser.text());
     this.express.use(bodyParser.urlencoded({ extended: true }));
     this.express.use(helmet());
     this.express.use(cors());
+
+    passport.use(this.localStrategyHandler);
+    passport.serializeUser(this.serializeUserHandler.bind(this));
+    passport.deserializeUser(this.deserializeUser.bind(this));
+
+    const sessionHandler = session({
+      secret: routesConfig.secret,
+      resave: false,
+      saveUninitialized: true,
+      store: this.sessionStore,
+      cookie: {
+        maxAge: 1000 * 60 * 60 * 14 // (1 day * 14 hr/1 day * 60 min/1 hr * 60 sec/1 min * 1000 ms / 1 sec)
+      }
+    });
+    this.express.use(sessionHandler);
+    const passportInitializeHandler = passport.initialize();
+    this.express.use(passportInitializeHandler);
+    const passportSessionHanlder = passport.session();
+    this.express.use(passportSessionHanlder);
+
+    // Since we are using the passport.authenticate() method, we should be redirected no matter what 
+    // , { failureRedirect: 'failure', successRedirect: 'restricted' })
+    this.express.post('/login', passport.authenticate('local'), (outerReq: Request, outerRes: Response, outerNext: NextFunction) => { });
+    this.express.get('/login-status', (req, res) => {
+      // https://stackoverflow.com/questions/18739725/how-to-know-if-user-is-logged-in-with-passport-js
+      req.isAuthenticated() ? res.status(200).send({ loggedIn: true }) : res.status(200).send({ loggedIn: false });
+    });
+    // Visiting this route logs the user out
+    this.express.post('/logout', (req, res, next) => {
+      req.logout();
+      res.redirect('/');
+    });
   }
 
   public configureExpress(): void {
