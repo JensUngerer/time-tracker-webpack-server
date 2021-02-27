@@ -80,12 +80,12 @@ export class App implements IApp {
       // App.logger.info(pathStr);
       response.sendFile('index.html', { root: pathStr });
     });
-    this.express.get('/' + routesConfig.viewsPrefix + '*', (request: Request, response: Response) => {
-      // DEBUGGING:
-      // App.logger.info(request.url);
-      // App.logger.info(pathStr);
-      response.sendFile('index.html', { root: pathStr });
-    });
+    // this.express.get('/' + routesConfig.viewsPrefix + '*', (request: Request, response: Response) => {
+    //   // DEBUGGING:
+    //   // App.logger.info(request.url);
+    //   // App.logger.info(pathStr);
+    //   response.sendFile('index.html', { root: pathStr });
+    // });
   }
 
   public configureRest() {
