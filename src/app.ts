@@ -308,7 +308,7 @@ export class App implements IApp {
     });
     this.express.get('/api/login-status', (req, res) => {
       // https://stackoverflow.com/questions/18739725/how-to-know-if-user-is-logged-in-with-passport-js
-      req.isAuthenticated() ? res.status(200).send(JSON.stringify({ loggedIn: true })) : res.status(200).send(JSON.stringify({ loggedIn: false }));
+      req.isAuthenticated() ? res.status(200).send(JSON.stringify({ isLoggedIn: true })) : res.status(200).send(JSON.stringify({ isLoggedIn: false }));
     });
     // Visiting this route logs the user out
     this.express.post('/api/logout', (req, res, next) => {
@@ -332,14 +332,12 @@ export class App implements IApp {
     //   // App.logger.info(pathStr);
     //   response.sendFile('index.html', { root: pathStr });
     // });
-    // this.express.get('/' + routesConfig.viewsPrefix + '*', (request: Request, response: Response) => {
-    //   // DEBUGGING:
-    //   // App.logger.info(request.url);
-    //   // App.logger.info(pathStr);
-    //   response.sendFile('index.html', { root: pathStr });
-    // });
-
-
+    this.express.get('/' + routesConfig.viewsPrefix + '*', (request: Request, response: Response) => {
+      // DEBUGGING:
+      // App.logger.info(request.url);
+      // App.logger.info(pathStr);
+      response.sendFile('index.html', { root: pathStr });
+    });
   }
 
   public configureRest() {
