@@ -232,10 +232,15 @@ export class App implements IApp {
         '/assets',
         '/MaterialIcons-Regular',
         '/stopwatch-2-32.ico',
-        '/view/',
         '/favicon.ico',
         '/api/',
-        '/vendor'
+        '/vendor',
+        '/' + routesConfig.viewsPrefix,
+        routesConfig.bookingDeclaration,
+        routesConfig.timeRecord,
+        routesConfig.task,
+        routesConfig.project,
+        routesConfig.timeEntries
       ];
       let isAllowed = false;
       allowedUrls.forEach((oneAllowedUrlPrefix: string) => {
@@ -247,7 +252,6 @@ export class App implements IApp {
         isAllowed = true;
       }
       if (isAllowed) {
-        // console.log('isAllowed:' + isAllowed);
         next('route');
       } else {
         const HTTP_STATUS_CODE_UNAUTHORIZED = 401;
@@ -259,79 +263,49 @@ export class App implements IApp {
     };
     this.express.use(ensureAuthenticatedHanlder)
 
-    // Since we are using the passport.authenticate() method, we should be redirected no matter what 
-    // , { failureRedirect: 'failure', successRedirect: 'restricted' })
-    /**
-     * passport.authenticate('local', () => {
-      console.log(JSON.stringify(arguments, null, 4));
-    })
-     */
-
     this.express.post('/api/login', (req: Request, res: Response, next: NextFunction) => {
-      // console.log("express.post('/api/login'");
-      // console.log(req.url);
-      // console.log(JSON.stringify(req.body, null, 4));
-      // console.log(req.body);
-      // req.logIn({
-      //   username,
-      //   password
-      // })
       const body = JSON.parse(req.body);
-      // console.log(body);
-      // console.log(body.username);
-      // console.log(body.password);
+
       this.innerAuthentification(body.username, body.password, (err: any, user?: any) => {
         if (err) {
-          console.log(JSON.stringify(err));
+          console.error(JSON.stringify(err));
           next(err);
           return;
         }
         if (!user) {
           const noUserMsg = 'no user:' + JSON.stringify(user, null, 4);
-          console.log(noUserMsg);
+          console.error(noUserMsg);
           next(noUserMsg);
           return;
         }
         req.login(user, (errForLogin: any) => {
           if (errForLogin) {
             const errForLoginMsg = 'errorForLoging:' + JSON.stringify(errForLogin, null, 4);
-            console.log(errForLoginMsg);
+            console.error(errForLoginMsg);
             next(errForLoginMsg);
             return;
           }
-          // next();
           res.status(200).send('login-was-successful');
         })
       });
-
-      // res.send('true');
     });
     this.express.get('/api/login-status', (req, res) => {
       // https://stackoverflow.com/questions/18739725/how-to-know-if-user-is-logged-in-with-passport-js
       req.isAuthenticated() ? res.status(200).send(JSON.stringify({ isLoggedIn: true })) : res.status(200).send(JSON.stringify({ isLoggedIn: false }));
     });
+
     // Visiting this route logs the user out
     this.express.post('/api/logout', (req, res, next) => {
-      // console.log("'express.post('/api/logout'");
-      // console.log(typeof req.logout);
       req.logout();
       res.status(200).send('logout-was-successful');
-      // res.redirect('http://' + routesConfig.hostname + ':' + routesConfig.port);
     });
 
-    // TODO: necessary ?
     this.express.use('/', express.static(pathStr));
 
     // https://stackoverflow.com/questions/25216761/express-js-redirect-to-default-page-instead-of-cannot-get
     // https://stackoverflow.com/questions/30546524/making-angular-routes-work-with-express-routes
     // https://stackoverflow.com/questions/26917424/angularjs-and-express-routing-404
     // https://stackoverflow.com/questions/26079611/node-js-typeerror-path-must-be-absolute-or-specify-root-to-res-sendfile-failed
-    // this.express.get('/', (request: Request, response: Response) => {
-    //   // DEBUGGING:
-    //   // App.logger.info(request.url);
-    //   // App.logger.info(pathStr);
-    //   response.sendFile('index.html', { root: pathStr });
-    // });
     this.express.get('/' + routesConfig.viewsPrefix + '*', (request: Request, response: Response) => {
       // DEBUGGING:
       // App.logger.info(request.url);
