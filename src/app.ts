@@ -16,11 +16,8 @@ import timeEntries from './classes/routes//timeEntries';
 import bookingDeclarationRoute from './classes/routes//bookingDeclarationRoute';
 import { getLogger, Logger } from 'log4js';
 import mongoose, { Connection, Document, Model, } from 'mongoose';
-import { Strategy } from 'passport-local';
+// import { Strategy } from 'passport-local';
 import session from 'express-session';
-
-// const MongoStore = connectMongo(session);
-// const LocalStrategy = passportLocal.Strategy;
 
 export interface IApp {
   configure(): void;
@@ -33,7 +30,6 @@ export interface IApp {
 
 
 // @ts-ignore
-// import { ensureAuthenticated } from 'connect-ensure-authenticated';
 import passport from 'passport';
 import MongoStore from 'connect-mongo';
 
@@ -43,11 +39,6 @@ interface IUser extends Document<any> {
 }
 
 export class App implements IApp {
-  //   private readonly UserSchema: Schema = new mongoose.Schema({
-  //     username: String,
-  //     hash: String
-  // });
-
   private express: Application;
   private server: Server;
   public static mongoDbOperations: MonogDbOperations;
@@ -102,44 +93,13 @@ export class App implements IApp {
     });
     this.User = mogooseConnection.model<IUser>('User', UserSchema);
 
-    this.localStrategyHandler = new Strategy(
-      (username, password, cb) => {
-        // console.log(username);
-        // console.log(password);
-        this.innerAuthentification(username, password, cb);
-      }
-    );
+    // this.localStrategyHandler = new Strategy(
+    //   (username, password, cb) => {
+    //     this.innerAuthentification(username, password, cb);
+    //   }
+    // );
     const client = mogooseConnection.getClient();
-    // { collectionName: routesConfig.sessionsCollectionName, mongoUrl: completeDataBaseString }
     this.sessionStore = new MongoStore({ clientPromise: Promise.resolve(client) });
-    // this.sessionStore.
-    /**
-     *  mongoUrl?: string;
-    clientPromise?: Promise<MongoClient>;
-    collectionName?: string;
-    mongoOptions?: MongoClientOptions;
-    dbName?: string;
-    ttl?: number;
-    touchAfter?: number;
-    stringify?: boolean;
-    createAutoRemoveIdx?: boolean;
-    autoRemove?: 'native' | 'interval' | 'disabled';
-    autoRemoveInterval?: number;
-    serialize?: (a: any) => any;
-    unserialize?: (a: any) => any;
-    writeOperationOptions?: CommonOptions;
-    transformId?: (a: any) => any;
-    crypto?: CryptoOptions;
-     */
-    // const options: ConnectionMongoOptions = {
-    //   // mongoUrl: completeDataBaseString,
-    //   clientP: 
-
-    // };
-    // // { collectionName, ttl, mongoOptions, autoRemove, autoRemoveInterval, touchAfter, stringify, crypto, ...required }: ConnectMongoOptions
-    // // { mongooseConnection: options, collection: process.env.DATA_BASE_SESSIONS_COLLECTION_NAME }
-    // const sessionStore = new MongoStore(options)
-
   }
 
   public setupDatabaseConnection() {
@@ -159,10 +119,10 @@ export class App implements IApp {
     return hash === passwordHash;
   }
 
-  private localStrategyHandler: Strategy;
+  // private localStrategyHandler: Strategy;
 
   private serializeUserHandler(user: Express.User, done: (err: any, id?: any) => void) {
-    // console.log(JSON.stringify(user, null, 4));
+    // App.logger.log(JSON.stringify(user, null, 4));
     done(null, (user as any)._id);
   }
 
@@ -180,7 +140,7 @@ export class App implements IApp {
     this.express.use(helmet());
     this.express.use(cors());
 
-    passport.use(this.localStrategyHandler);
+    // passport.use(this.localStrategyHandler);
     passport.serializeUser(this.serializeUserHandler.bind(this));
     passport.deserializeUser(this.deserializeUser.bind(this));
 
@@ -207,22 +167,7 @@ export class App implements IApp {
     const pathStr: string = path.resolve(App.absolutePathToAppJs, relativePathToAppJs);
 
     // https://medium.com/javascript-in-plain-english/excluding-routes-from-calling-express-middleware-with-express-unless-3389ab4117ef
-    // this.express.use(ensureAuthenticated().unless({
-    //   path: ['/' + routesConfig.viewsPrefix + '*', '/', '/api/login', 'api/login-status', '/api/logout']
-    // }));
     const ensureAuthenticatedHanlder = (req: Request, res: Response, next: NextFunction) => {
-      // console.log(req.url);
-
-      /**
-      /styles.7c679b653e27c931f689.css
-      /runtime-es2015.a4dadbc03350107420a4.js
-      /polyfills-es2015.d74b108abb35193b00e4.js
-      /main-es2015.3505e6209b4b969c1d73.js
-      /scripts.1b91bff80e5970cfd35f.js
-      /assets/config/config.json
-      /MaterialIcons-Regular.cff684e59ffb052d72cb.woff2
-      /stopwatch-2-32.ico
-      */
       const allowedUrls = [
         '/styles',
         '/runtime',
@@ -268,20 +213,20 @@ export class App implements IApp {
 
       this.innerAuthentification(body.username, body.password, (err: any, user?: any) => {
         if (err) {
-          console.error(JSON.stringify(err));
+          App.logger.error(JSON.stringify(err));
           next(err);
           return;
         }
         if (!user) {
           const noUserMsg = 'no user:' + JSON.stringify(user, null, 4);
-          console.error(noUserMsg);
+          App.logger.error(noUserMsg);
           next(noUserMsg);
           return;
         }
         req.login(user, (errForLogin: any) => {
           if (errForLogin) {
             const errForLoginMsg = 'errorForLoging:' + JSON.stringify(errForLogin, null, 4);
-            console.error(errForLoginMsg);
+            App.logger.error(errForLoginMsg);
             next(errForLoginMsg);
             return;
           }
